@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+[x-cloak] {
+    display: none;
+}
+
+.layout-sidebar{
+    position: relative !important;
+    top: 2rem !important;
+
+}
