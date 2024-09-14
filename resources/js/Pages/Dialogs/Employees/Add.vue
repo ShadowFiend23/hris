@@ -1,7 +1,11 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, inject } from 'vue';
 import { useForm } from '@inertiajs/vue3';
+import { useToast } from "primevue/usetoast";
 import InputError from '@/Components/InputError.vue';
+
+const dialogRef = inject('dialogRef');
+const toast = useToast();
 
 const form = useForm({
     firstName: '',
@@ -12,7 +16,8 @@ const form = useForm({
     department: '',
     position: '',
     dateStart: '',
-    status: 'Active'
+    status: 'Active',
+    employmentType: ''
 });
 
 const statusOptions = ref([
@@ -21,11 +26,19 @@ const statusOptions = ref([
 ])
 
 const submit = () => {
-    form.transform(data => ({
-        ...data,
-        remember: form.remember ? 'on' : '',
-    })).post(route('login'), {
-        onFinish: () => form.reset('password'),
+    form.post(route('employees.store'), {
+        onSuccess: (xhr) => {
+            let response = xhr.props.response;
+
+            toast.add({
+                severity: response.type ,
+                summary: response.message,
+                group: 'tr',
+                life: 5000
+            });
+
+            dialogRef.value.close();
+        }
     });
 };
 </script>
@@ -121,5 +134,7 @@ const submit = () => {
                 </div>
             </div>
         </Panel>
+
+        <Button type="button" label="Submit" class="mt-8 float-right min-w-28" outlined @click="submit" />
     </form>
 </template>

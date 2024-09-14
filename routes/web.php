@@ -1,27 +1,25 @@
 <?php
 
+use App\Http\Controllers\DepartmentsController;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Application;
 use App\Http\Controllers\EmployeesController;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    return redirect()->route('dashboard');
 });
 
-Route::middleware([
-    'auth:sanctum',
-    config('jetstream.auth_session'),
-    'verified',
-])->group(function () {
+Route::middleware(['auth:sanctum',config('jetstream.auth_session'),'verified',])->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
+});
 
-    Route::resource('/employees',EmployeesController::class);
+Route::middleware(['auth:sanctum',config('jetstream.auth_session'),'verified',])->prefix('personnel')->group(function () {
+    Route::get('/',fn() => redirect()->route('employees.index'));
+
+    Route::apiResource('/employees',EmployeesController::class);
+
+    Route::apiResource('/departments',DepartmentsController::class);
 });

@@ -5,16 +5,33 @@ import AppMenuItem from './AppMenuItem.vue';
 
 const model = ref([
     {
-        label: 'Home',
-        items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', to: '/' }]
-    },
-    {
-        label: 'Personnel',
         items: [
-            { label: 'Employees', svg: 'mysql', to: route('employees.index') },
-            { label: 'Mongo', svg: 'mongo', to: '/mongo' }
+            {   label: 'Dashboard',
+                icon: 'pi pi-fw pi-home',
+                to: route('dashboard'),
+                prefix: 'dashboard'
+            },
+            {
+                label: 'Personnel',
+                to: route('employees.index'),
+                icon: 'fa-solid fa-users',
+                prefix: 'personnel'
+            },
+            {
+                label: 'Timekeeping',
+                to: route('employees.index'),
+                icon: 'fa-solid fa-calendar-days',
+                prefix: 'timekeeping'
+            },
+            {
+                label: 'Payroll',
+                to: route('employees.index'),
+                icon: 'fa-solid fa-credit-card',
+                prefix: 'payroll'
+            }
         ]
-    }
+    },
+
 ]);
 </script>
 

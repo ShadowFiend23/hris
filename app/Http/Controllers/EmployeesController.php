@@ -4,63 +4,100 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Inertia\Inertia;
+use App\Models\Employees;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class EmployeesController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        return Inertia::render('Employees/Employees',[
-            'employees' => User::all()
+        return Inertia::render('Personnel/Employees',[
+            'employees' => Employees::select(DB::raw(
+                    '*,CONCAT(
+                        firstName,
+                        IF(LENGTH(middleName),CONCAT(LEFT(middleName,0), ". "),NULL),
+                        lastName
+                    ) as fullName'))
+                    ->get()
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            "firstName"         => "required",
+            "lastName"          => "required",
+            "employeeID"        => "required",
+            "department"        => "required",
+            "position"          => "required",
+            "dateStart"         => "required",
+            "status"            => "required",
+            "employmentType"    => "required"
+        ],[
+            "employeeID.required" => "The employee id is required"
+        ]);
+
+        $tempValues = [
+            "addressNo" => "",
+            "addressStreet" => "",
+            "addressProvince" => "",
+            "addressCity" => "",
+            "addressBarangay" => "",
+            "phoneNumber" => "",
+            "emailAddress" => "",
+            "birthDate" => "1900-01-01",
+            "photo" => "",
+            "gender" => "",
+            "maritalStatus" => "",
+            "supervisor" => 0,
+            "dateStart" => date("Y-m-d")
+        ];
+
+        $request->merge($tempValues);
+
+        try {
+            Employees::create($request->all());
+
+            $response = [
+                "type"      => "success",
+                "message"   => "Successfully added an employee."
+            ];
+
+        } catch (\Exception $e) {
+            Log::channel('store')->error(json_encode([
+                "controller" => "EmployeesController",
+                "params" => $e
+            ]));
+            $response = [
+                "type"      => "error",
+                "message"   => "Server Error. Please Try Again Later."
+            ];
+        }
+
+        return Inertia::render('Personnel/Employees',[
+            'employees' => Employees::select(DB::raw(
+                    '*,CONCAT(
+                        firstName,
+                        IF(LENGTH(middleName),CONCAT(LEFT(middleName,0), ". "),NULL),
+                        lastName
+                    ) as fullName'))
+                    ->get(),
+            'response'  => $response
+        ]);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(string $id)
     {
-        //
+
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
-        //
+
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
         //

@@ -1,6 +1,5 @@
 <script setup>
 
-// import { Inertia } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useDialog } from 'primevue/usedialog';
 import AddEmployee from '@/Pages/Dialogs/Employees/Add.vue';
@@ -60,9 +59,9 @@ const addEmployeeClicked = () => {
                             </template>
                             <template #empty> No customers found. </template>
                             <template #loading> Loading customers data. Please wait. </template>
-                            <Column field="name" header="Name"></Column>
-                            <Column field="email" header="Email"></Column>
-                            <Column field="password" header="Password"></Column>
+                            <Column field="fullName" header="Full Name"></Column>
+                            <Column field="department" header="Department"></Column>
+                            <Column field="position" header="Position"></Column>
                         </DataTable>
                 </div>
             </div>

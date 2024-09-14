@@ -8,3 +8,44 @@
         width: 50% !important;
     }
 }
+.whole-main{
+    margin-left: 3rem;
+    width: calc(100% - 150px);
+}
+
+.main-top-bar{
+    height: 60px;
+    margin-top: 1rem;
+}
+
+.layout-submenu a
+{
+    display: block !important;
+}
+
+.layout-menu ul a{
+    padding: 0.65rem 0 !important;
+}
+
+.layout-sidebar{
+    width: 100px !important;
+    padding: 0.5rem 0 !important;
+    position: relative !important;
+    top: 1rem !important;
+    height: calc(100vh - 2rem) !important;
+}
+
+
+.layout-menuitem-icon{
+    display: block;
+    width: 100%;
+}
+
+.layout-menuitem-text{
+    text-align: center;
+}
+
+.p-menubar-item-link.active{
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+}

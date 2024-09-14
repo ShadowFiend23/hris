@@ -127,6 +127,26 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'store' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/store.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+
+        'update' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/update.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+
+        'delete' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/delete.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
     ],
 
 ];
