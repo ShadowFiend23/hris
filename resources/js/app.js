@@ -15,7 +15,7 @@ import DialogService from 'primevue/dialogservice';
 import ToastService from 'primevue/toastservice';
 import Toast from 'primevue/toast';
 import DynamicDialog from 'primevue/dynamicdialog';
-import Aura from '@primevue/themes/aura';
+import Aura from '@primevue/themes/lara';
 
 library.add(fas, far, fab);
 dom.watch();
