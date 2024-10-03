@@ -26,17 +26,17 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 const MyPreset = definePreset(Aura, {
     semantic: {
         primary: {
-            50: '{indigo.50}',
-            100: '{indigo.100}',
-            200: '{indigo.200}',
-            300: '{indigo.300}',
-            400: '{indigo.400}',
-            500: '{indigo.500}',
-            600: '{indigo.600}',
-            700: '{indigo.700}',
-            800: '{indigo.800}',
-            900: '{indigo.900}',
-            950: '{indigo.950}'
+            50: '#B7B1F7',
+            100: '#A9A2F6',
+            200: '#9B93F4',
+            300: '#8D84F3',
+            400: '#8075F1',
+            500: '#7367F0',
+            600: '#675DD8',
+            700: '#5C52C0',
+            800: '#5048A8',
+            900: '#453E90',
+            950: '#393478'
         }
     }
 });

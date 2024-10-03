@@ -22,7 +22,7 @@ const items = ref([
     {
         label: 'Positions',
         icon: 'fa-solid fa-people-group',
-        to: '',
+        to: route('positions.index'),
         routeKey: 'positions'
     }
 ]);

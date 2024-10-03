@@ -102,4 +102,24 @@ class EmployeesController extends Controller
     {
         //
     }
+
+    public function search(Request $request){
+        $employees = [];
+        if($request->exists("search")){
+            $search = $request->search;
+            $employees = Employees::select(DB::raw(
+                    '*,CONCAT(
+                        firstName,
+                        IF(LENGTH(middleName),CONCAT(LEFT(middleName,0), ". "),NULL),
+                        lastName
+                    ) as fullName'))
+                    ->where('firstName','LIKE',"%{$search}%")
+                    ->orWhere('lastName','LIKE',"%{$search}%")
+                    ->orWhere('middleName','LIKE',"%{$search}%")
+                    ->orWhere('employeeID','LIKE',"%{$search}%")
+                    ->get();
+        }
+
+        return response()->json($employees);
+    }
 }

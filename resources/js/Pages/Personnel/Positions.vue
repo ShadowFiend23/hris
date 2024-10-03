@@ -2,40 +2,46 @@
 
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useDialog } from 'primevue/usedialog';
-import AddEmployee from '@/Pages/Dialogs/Employees/Add.vue';
+import { router } from '@inertiajs/vue3';
+import AddPosition from '@/Pages/Dialogs/Positions/Add.vue';
 import { watch, ref } from 'vue';
+import axios from 'axios';
 
 const dialog = useDialog();
 const search = ref('');
 
 const props = defineProps({
-    employees: {
+    positions: {
         type: Array
-    },
+    }
 });
 
-const employeesList = ref(props.employees);
+const positionList = ref(props.positions);
 
 watch(search,async (val) =>{
-    let resp = await axios.get(route('employees.search',{ search: val}))
+    let resp = await axios.get(route('positions.search',{ search: val}))
         .then((response) => response)
         .catch((e) => console.log(e));
 
     if(Array.isArray(resp.data)){
-        employeesList.value = resp.data
+        positionList.value = resp.data
     }
 })
+// const searchKeyUp = (e) => {
+//     form.get(route('positions.search'), {
+//         onSuccess: (xhr) => {
+//             let response = xhr.props.response;
 
-const addEmployeeClicked = () => {
-    dialog.open(AddEmployee,{
+//         }
+//     });
+// }
+
+const addPositionClicked = () => {
+    dialog.open(AddPosition,{
         props: {
-            header: 'Add Employee',
+            header: 'Add a Position',
             style: {
-                width: '60vw'
-            },
-            breakpoints: {
-                '960px': '75vw',
-                '640px': '90vw'
+                width: '550px'
             },
             modal: true,
             position: 'top'
@@ -43,16 +49,24 @@ const addEmployeeClicked = () => {
     });
 }
 
+const editPositionClicked = (id) => {
+
+}
+
+const deletePositionClicked = (id) => {
+
+}
+
 </script>
 
 <template>
-    <AppLayout title="Employees">
+    <AppLayout title="Positions">
         <div class="mx-auto pr-4 pl-1">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
                 <div class="card">
                     <div class="font-semibold text-xl mb-4">Filtering</div>
                         <DataTable
-                            :value="employeesList"
+                            :value="positionList"
                             :paginator="true"
                             :rows="10"
                             dataKey="ID"
@@ -64,7 +78,7 @@ const addEmployeeClicked = () => {
                         >
                             <template #header>
                                 <div class="flex justify-content-end flex-column sm:flex-row">
-                                    <Button type="button" icon="pi pi-plus" label="Add" class="mx-2" outlined @click="addEmployeeClicked()" />
+                                    <Button type="button" icon="pi pi-plus" label="Add" class="mx-2" outlined @click="addPositionClicked()" />
                                     <IconField iconPosition="left">
                                         <InputIcon class="pi pi-search" />
                                         <InputText placeholder="Keyword Search" style="width: 100%" v-model="search"/>
@@ -73,9 +87,21 @@ const addEmployeeClicked = () => {
                             </template>
                             <template #empty> No customers found. </template>
                             <template #loading> Loading customers data. Please wait. </template>
-                            <Column field="fullName" header="Full Name"></Column>
-                            <Column field="department" header="Department"></Column>
+                            <Column field="position" header="">
+                                <template #body="slotProps">
+                                    {{ slotProps.index + 1 }}
+                                </template>
+                            </Column>
                             <Column field="position" header="Position"></Column>
+                            <Column field="abbreviation" header="Abbreviation"></Column>
+                            <Column field="id" header="Action" class="lg:max-w-[6rem] xl:max-w-[5rem]">
+                                <template #body="data">
+                                    <ButtonGroup class="flex justify-center">
+                                        <Button severity="" label="Edit" icon="fa fa-pen" @click="editPositionClicked(data)" />
+                                        <Button severity="danger" label="Delete" icon="fa fa-trash" @click="deletePositionClicked(data)" />
+                                    </ButtonGroup>
+                                </template>
+                            </Column>
                         </DataTable>
                 </div>
             </div>
