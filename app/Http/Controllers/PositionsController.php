@@ -29,7 +29,7 @@ class PositionsController extends Controller
 
         try {
 
-            $result = Positions::create($request->all());
+            Positions::create($request->all());
 
             $response = [
                 "type"      => "success",

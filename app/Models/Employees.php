@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Employees extends Model
 {
@@ -34,4 +35,14 @@ class Employees extends Model
         "maritalStatus",
         "supervisor",
     ];
+
+    static function employeeSelect(){
+        $arr = Schema::getColumnListing('employees');
+
+        foreach ($arr as $i => $value) {
+            $arr[$i] = "employees.$value as employees.$value";
+        }
+
+        return $arr;
+    }
 }

@@ -43,6 +43,14 @@ const addEmployeeClicked = () => {
     });
 }
 
+const editEmployeeClicked = () => {
+
+}
+
+const deleteEmployeeClicked = () => {
+
+}
+
 </script>
 
 <template>
@@ -76,6 +84,14 @@ const addEmployeeClicked = () => {
                             <Column field="fullName" header="Full Name"></Column>
                             <Column field="department" header="Department"></Column>
                             <Column field="position" header="Position"></Column>
+                            <Column field="id" header="Action" class="lg:max-w-[6rem] xl:max-w-[5rem]">
+                                <template #body="data">
+                                    <ButtonGroup class="flex justify-center">
+                                        <Button severity="" label="Edit" icon="fa fa-pen" @click="editEmployeeClicked(data)" />
+                                        <Button severity="danger" label="Delete" icon="fa fa-trash" @click="deleteEmployeeClicked(data)" />
+                                    </ButtonGroup>
+                                </template>
+                            </Column>
                         </DataTable>
                 </div>
             </div>

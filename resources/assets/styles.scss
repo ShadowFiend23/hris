@@ -49,3 +49,15 @@
     color: var(--primary-color);
     border-bottom: 2px solid var(--primary-color);
 }
+
+.autocomplete-custom input{
+    width: 100%;
+}
+
+.autocomplete-custom-chip input{
+    --tw-ring-color: 0;
+    --tw-ring-offset-shadow: 0;
+    --tw-ring-shadow: 0;
+    box-shadow: none !important;
+    border:0 !important;
+}

@@ -2,7 +2,7 @@
 import { ref, getCurrentInstance } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useDialog } from 'primevue/usedialog';
-import AddEmployee from '@/Pages/Dialogs/Employees/Add.vue';
+import AddDepartment from '@/Pages/Dialogs/Departments/Add.vue';
 
 const dialog = useDialog();
 
@@ -14,36 +14,6 @@ const props = defineProps({
 
 const departmentsPopOverBtn = ref({});
 
-const cardItems = ref([
-    {
-        title : "Card 1",
-        content: 'Content 1'
-    },
-    {
-        title : "Card 2",
-        content: 'Content 2'
-    },
-    {
-        title : "Card 3",
-        content: 'Content 3'
-    },
-    {
-        title : "Card 4",
-        content: 'Content 4'
-    },
-    {
-        title : "Card 5",
-        content: 'Content 5'
-    },
-    {
-        title : "Card 6",
-        content: 'Content 6'
-    },
-    {
-        title : "Card 7",
-        content: 'Content 7'
-    }
-]);
 
 const exportDropdown = ref([
     {
@@ -75,6 +45,22 @@ const departmentPopOverToggle = (index, event) => {
     departmentsPopOverBtn.value[index].toggle(event);
 };
 
+const addDepartmentClicked = () => {
+    dialog.open(AddDepartment,{
+        props: {
+            header: 'Add Department',
+            style: {
+                width: '60vw'
+            },
+            breakpoints: {
+                '960px': '75vw',
+                '640px': '90vw'
+            },
+            modal: true,
+            position: 'top'
+        },
+    });
+}
 </script>
 
 <template>
@@ -82,8 +68,8 @@ const departmentPopOverToggle = (index, event) => {
         <div class="mx-auto pr-4 pl-1">
             <Toolbar>
                 <template #start>
-                    <Button icon="pi pi-plus" class="mr-2" severity="secondary" text />
-                    <Button icon="pi pi-print" class="mr-2" severity="secondary" text />
+                    <Button icon="pi pi-plus" class="mr-2" severity="default" label="Add" outlined @click="addDepartmentClicked"/>
+                    <Button icon="pi pi-print" class="mr-2" severity="info" label="Print"/>
                 </template>
 
                 <template #center>
@@ -100,12 +86,12 @@ const departmentPopOverToggle = (index, event) => {
 
             <Panel header="Departments" class="mt-3" >
                 <div class="flex flex-wrap">
-                    <div class="cardHolder w-[23%] mx-4 mt-3" v-for="(card,i) in cardItems" :key="card.title">
+                    <div class="cardHolder w-[23%] mx-4 mt-3" v-for="(row,i) in props.departments" :key="row['departments.id']">
                         <Card>
-                            <template #title>{{ card.title }}</template>
+                            <template #title>{{ row["departments.name"]}}</template>
                             <template #content>
                                 <p class="m-0">
-                                    {{ card.content }}
+                                    {{ `${row["employees.firstName"]} ${row["employees.lastName"]}` }}
                                 </p>
                             </template>
                             <template #footer>
@@ -119,5 +105,7 @@ const departmentPopOverToggle = (index, event) => {
                 </div>
             </Panel>
         </div>
+
+        <DynamicDialog />
     </AppLayout>
 </template>
