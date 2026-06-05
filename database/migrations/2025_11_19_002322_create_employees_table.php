@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('employees', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->nullable()->constrained('users')->nullableOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained('users')->noActionOnDelete();
             $table->foreignId('company_id')->constrained('companies')->cascadeOnDelete();
-            $table->foreignId('department_id')->nullable()->constrained('departments')->nullableOnDelete();
-            $table->string('position_id')->nullable()->constrained('positions')->nullableOnDelete();
+            $table->foreignId('department_id')->nullable()->constrained('departments')->noActionOnDelete();
+            $table->foreignId('position_id')->nullable()->constrained('positions')->noActionOnDelete();
             $table->string('employee_id')->unique();
             $table->string('first_name');
             $table->string('middle_name')->nullable();

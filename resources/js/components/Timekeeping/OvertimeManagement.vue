@@ -1,37 +1,43 @@
 <template>
   <div class="space-y-6">
     <!-- Overtime Summary -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div v-if="summaryLoading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div v-for="i in 4" :key="i" class="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
+        <div class="h-4 bg-gray-200 rounded w-32 mb-2" />
+        <div class="h-10 bg-gray-200 rounded w-16" />
+      </div>
+    </div>
+    <div v-else class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div class="bg-white rounded-lg border border-gray-200 p-6">
         <p class="text-gray-600 text-sm font-medium">Overtime This Month</p>
-        <p class="text-3xl font-bold text-gray-900 mt-2">{{ overtimeThisMonth }}h</p>
-        <p class="text-xs text-gray-500 mt-2">4 sessions</p>
+        <p class="text-3xl font-bold text-gray-900 mt-2">{{ summary.thisMonth }}h</p>
+        <p class="text-xs text-gray-500 mt-2">{{ summary.thisMonthCount }} sessions</p>
       </div>
 
       <div class="bg-white rounded-lg border border-gray-200 p-6">
         <p class="text-gray-600 text-sm font-medium">Overtime This Year</p>
-        <p class="text-3xl font-bold text-gray-900 mt-2">{{ overtimeThisYear }}h</p>
-        <p class="text-xs text-gray-500 mt-2">across 32 sessions</p>
+        <p class="text-3xl font-bold text-gray-900 mt-2">{{ summary.thisYear }}h</p>
+        <p class="text-xs text-gray-500 mt-2">across {{ summary.thisYearCount }} sessions</p>
       </div>
 
       <div class="bg-white rounded-lg border border-gray-200 p-6">
         <p class="text-gray-600 text-sm font-medium">Pending Approval</p>
-        <p class="text-3xl font-bold text-amber-600 mt-2">{{ pendingApproval }}h</p>
-        <p class="text-xs text-gray-500 mt-2">2 pending requests</p>
+        <p class="text-3xl font-bold text-amber-600 mt-2">{{ summary.pending }}h</p>
+        <p class="text-xs text-gray-500 mt-2">{{ summary.pendingCount }} pending requests</p>
       </div>
 
       <div class="bg-white rounded-lg border border-gray-200 p-6">
-        <p class="text-gray-600 text-sm font-medium">Approved & Paid</p>
-        <p class="text-3xl font-bold text-green-600 mt-2">{{ approvedPaid }}h</p>
-        <p class="text-xs text-gray-500 mt-2">this year</p>
+        <p class="text-gray-600 text-sm font-medium">Approved</p>
+        <p class="text-3xl font-bold text-green-600 mt-2">{{ summary.approved }}h</p>
+        <p class="text-xs text-gray-500 mt-2">this period</p>
       </div>
     </div>
 
     <!-- Request Overtime -->
     <div class="bg-white rounded-lg border border-gray-200 p-6">
       <h3 class="text-lg font-semibold text-gray-900 mb-6">Request Overtime</h3>
-      
-      <form @submit.prevent="submitOvertimeRequest" class="space-y-4">
+
+      <form @submit.prevent="handleSubmitOvertime" class="space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
@@ -45,7 +51,7 @@
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
-            <select v-model="overtimeForm.type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <select v-model="overtimeForm.overtime_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
               <option value="">Select type</option>
               <option value="weekday">Weekday</option>
               <option value="weekend">Weekend</option>
@@ -59,7 +65,22 @@
           <textarea v-model="overtimeForm.reason" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Describe the reason for overtime" />
         </div>
 
-        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+        <!-- Error Message -->
+        <div v-if="submitError" class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          {{ submitError }}
+        </div>
+
+        <!-- Success Message -->
+        <div v-if="submitSuccess" class="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+          Overtime request submitted successfully!
+        </div>
+
+        <button
+          type="submit"
+          :disabled="isSubmitting"
+          class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+        >
+          <Loader2 v-if="isSubmitting" class="animate-spin" :size="16" />
           Submit Overtime Request
         </button>
       </form>
@@ -68,8 +89,13 @@
     <!-- Overtime History -->
     <div class="bg-white rounded-lg border border-gray-200 p-6">
       <h3 class="text-lg font-semibold text-gray-900 mb-6">Overtime History</h3>
-      
-      <div class="overflow-x-auto">
+
+      <!-- Loading State -->
+      <div v-if="historyLoading" class="space-y-3">
+        <div v-for="i in 5" :key="i" class="h-12 bg-gray-100 rounded animate-pulse" />
+      </div>
+
+      <div v-else class="overflow-x-auto">
         <table class="w-full">
           <thead>
             <tr class="border-b border-gray-200">
@@ -78,32 +104,38 @@
               <th class="text-left py-3 px-4 font-medium text-gray-900">Type</th>
               <th class="text-left py-3 px-4 font-medium text-gray-900">Reason</th>
               <th class="text-left py-3 px-4 font-medium text-gray-900">Status</th>
-              <th class="text-left py-3 px-4 font-medium text-gray-900">Pay Rate</th>
+              <th class="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
             </tr>
           </thead>
           <tbody>
+            <tr v-if="overtimeHistory.length === 0">
+              <td colspan="6" class="py-8 text-center text-gray-500">No overtime records found</td>
+            </tr>
             <tr v-for="record in overtimeHistory" :key="record.id" class="border-b border-gray-200 hover:bg-gray-50">
-              <td class="py-3 px-4 text-gray-900">{{ record.date }}</td>
+              <td class="py-3 px-4 text-gray-900">{{ formatDate(record.date) }}</td>
               <td class="py-3 px-4 text-gray-900 font-medium">{{ record.hours }}h</td>
-              <td class="py-3 px-4 text-gray-600">{{ record.type }}</td>
-              <td class="py-3 px-4 text-gray-600">{{ record.reason }}</td>
+              <td class="py-3 px-4 text-gray-600 capitalize">{{ record.overtime_type }}</td>
+              <td class="py-3 px-4 text-gray-600">{{ record.reason || '-' }}</td>
               <td class="py-3 px-4">
                 <span :class="[
                   'inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium',
-                  record.status === 'Approved' ? 'bg-green-100 text-green-700' :
-                  record.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
-                  'bg-red-100 text-red-700'
+                  getStatusClass(record.status)
                 ]">
-                  <span :class="[
-                    'w-2 h-2 rounded-full',
-                    record.status === 'Approved' ? 'bg-green-600' :
-                    record.status === 'Pending' ? 'bg-amber-600' :
-                    'bg-red-600'
-                  ]" />
-                  {{ record.status }}
+                  <span :class="['w-2 h-2 rounded-full', getStatusDotClass(record.status)]" />
+                  {{ formatStatus(record.status) }}
                 </span>
               </td>
-              <td class="py-3 px-4 text-gray-900">{{ record.payRate }}</td>
+              <td class="py-3 px-4">
+                <button
+                  v-if="record.status === 'pending'"
+                  @click="handleCancelOvertime(record.id)"
+                  :disabled="cancellingId === record.id"
+                  class="text-red-600 hover:text-red-700 text-sm font-medium disabled:opacity-50"
+                >
+                  {{ cancellingId === record.id ? 'Cancelling...' : 'Cancel' }}
+                </button>
+                <span v-else class="text-gray-400 text-sm">-</span>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -113,85 +145,165 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { Loader2 } from 'lucide-vue-next'
+import { useTimekeeping, type OvertimeRecord } from '@/composables/useTimekeeping'
 
-const overtimeThisMonth = ref(8.5)
-const overtimeThisYear = ref(52)
-const pendingApproval = ref(4)
-const approvedPaid = ref(48)
+const {
+  submitOvertimeRequest,
+  fetchOvertimeHistory,
+  fetchOvertimeSummary,
+  cancelOvertimeRequest,
+} = useTimekeeping()
+
+const overtimeHistory = ref<OvertimeRecord[]>([])
+const summary = ref({
+  thisMonth: 0,
+  thisMonthCount: 0,
+  thisYear: 0,
+  thisYearCount: 0,
+  pending: 0,
+  pendingCount: 0,
+  approved: 0,
+})
+
+const historyLoading = ref(false)
+const summaryLoading = ref(false)
+const isSubmitting = ref(false)
+const submitError = ref<string | null>(null)
+const submitSuccess = ref(false)
+const cancellingId = ref<number | null>(null)
 
 const overtimeForm = ref({
   date: '',
   hours: 0,
-  type: '',
+  overtime_type: '',
   reason: ''
 })
 
-const overtimeHistory = ref([
-  {
-    id: 1,
-    date: 'Dec 18, 2024',
-    hours: 2,
-    type: 'Weekday',
-    reason: 'Critical bug fix',
-    status: 'Approved',
-    payRate: '1.5x'
-  },
-  {
-    id: 2,
-    date: 'Dec 17, 2024',
-    hours: 3,
-    type: 'Weekday',
-    reason: 'Project deadline',
-    status: 'Approved',
-    payRate: '1.5x'
-  },
-  {
-    id: 3,
-    date: 'Dec 14, 2024',
-    hours: 2,
-    type: 'Weekend',
-    reason: 'Server maintenance',
-    status: 'Pending',
-    payRate: '2x'
-  },
-  {
-    id: 4,
-    date: 'Dec 10, 2024',
-    hours: 1.5,
-    type: 'Weekday',
-    reason: 'Feature implementation',
-    status: 'Approved',
-    payRate: '1.5x'
-  },
-  {
-    id: 5,
-    date: 'Dec 8, 2024',
-    hours: 4,
-    type: 'Weekend',
-    reason: 'System upgrade',
-    status: 'Pending',
-    payRate: '2x'
-  },
-  {
-    id: 6,
-    date: 'Dec 5, 2024',
-    hours: 2,
-    type: 'Weekday',
-    reason: 'Client meeting',
-    status: 'Rejected',
-    payRate: '-'
-  }
-])
+// Helper functions
+const formatDate = (date: string): string => {
+  return new Date(date).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+}
 
-const submitOvertimeRequest = () => {
-  if (!overtimeForm.value.date || !overtimeForm.value.hours || !overtimeForm.value.type) {
-    alert('Please fill in all required fields')
+const formatStatus = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    pending: 'Pending',
+    approved: 'Approved',
+    rejected: 'Rejected',
+    paid: 'Paid',
+  }
+  return statusMap[status] || status
+}
+
+const getStatusClass = (status: string): string => {
+  switch (status) {
+    case 'approved': return 'bg-green-100 text-green-700'
+    case 'pending': return 'bg-amber-100 text-amber-700'
+    case 'rejected': return 'bg-red-100 text-red-700'
+    case 'paid': return 'bg-blue-100 text-blue-700'
+    default: return 'bg-gray-100 text-gray-700'
+  }
+}
+
+const getStatusDotClass = (status: string): string => {
+  switch (status) {
+    case 'approved': return 'bg-green-600'
+    case 'pending': return 'bg-amber-600'
+    case 'rejected': return 'bg-red-600'
+    case 'paid': return 'bg-blue-600'
+    default: return 'bg-gray-600'
+  }
+}
+
+// Event handlers
+const handleSubmitOvertime = async () => {
+  if (!overtimeForm.value.date || !overtimeForm.value.hours || !overtimeForm.value.overtime_type) {
+    submitError.value = 'Please fill in all required fields'
     return
   }
-  
-  console.log('Overtime request submitted:', overtimeForm.value)
-  alert('Overtime request submitted successfully!')
-  overtimeForm.value = { date: '', hours: 0, type: '', reason: '' }
+
+  isSubmitting.value = true
+  submitError.value = null
+  submitSuccess.value = false
+
+  try {
+    await submitOvertimeRequest({
+      date: overtimeForm.value.date,
+      hours: overtimeForm.value.hours,
+      overtime_type: overtimeForm.value.overtime_type || undefined,
+      reason: overtimeForm.value.reason || undefined,
+    })
+
+    submitSuccess.value = true
+    overtimeForm.value = { date: '', hours: 0, overtime_type: '', reason: '' }
+
+    // Refresh data
+    await Promise.all([loadHistory(), loadSummary()])
+  } catch (e) {
+    submitError.value = e instanceof Error ? e.message : 'Failed to submit overtime request'
+  } finally {
+    isSubmitting.value = false
+  }
 }
+
+const handleCancelOvertime = async (overtimeId: number) => {
+  cancellingId.value = overtimeId
+  try {
+    await cancelOvertimeRequest(overtimeId)
+    await Promise.all([loadHistory(), loadSummary()])
+  } catch (e) {
+    console.error('Failed to cancel overtime request:', e)
+  } finally {
+    cancellingId.value = null
+  }
+}
+
+const loadHistory = async () => {
+  historyLoading.value = true
+  try {
+    const response = await fetchOvertimeHistory({ per_page: 10 })
+    overtimeHistory.value = response.data || []
+  } catch (e) {
+    console.error('Failed to load overtime history:', e)
+  } finally {
+    historyLoading.value = false
+  }
+}
+
+const loadSummary = async () => {
+  summaryLoading.value = true
+  try {
+    const now = new Date()
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+    const startOfYear = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0]
+    const endOfYear = new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0]
+
+    const response = await fetchOvertimeSummary(startOfYear, endOfYear)
+    if (response.data) {
+      summary.value = {
+        thisMonth: response.data.total_hours || 0,
+        thisMonthCount: response.data.total_records || 0,
+        thisYear: response.data.total_hours || 0,
+        thisYearCount: response.data.total_records || 0,
+        pending: response.data.pending_hours || 0,
+        pendingCount: response.data.pending_count || 0,
+        approved: response.data.approved_hours || 0,
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load overtime summary:', e)
+  } finally {
+    summaryLoading.value = false
+  }
+}
+
+// Initialize data on mount
+onMounted(async () => {
+  await Promise.all([loadHistory(), loadSummary()])
+})
 </script>

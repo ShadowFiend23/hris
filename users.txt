@@ -1,0 +1,22 @@
+===================================================================
+  HRIS Test User Credentials
+  All passwords: password
+===================================================================
+
+ADMIN (1)
+-------------------------------------------------------------------
+  test@example.com          password    (Admin User)
+
+MANAGER (3)
+-------------------------------------------------------------------
+  ricardo.santos@testcompany.com   password    EMP-003 Ricardo Santos   - IT Director
+  maria.reyes@testcompany.com      password    EMP-004 Maria Reyes      - Operations Director
+  jose.cruz@testcompany.com        password    EMP-005 Jose Cruz        - IT Team Lead
+
+EMPLOYEE (3)
+-------------------------------------------------------------------
+  carlo.mendoza@testcompany.com    password    EMP-009 Carlo Mendoza    - Developer
+  patricia.garcia@testcompany.com  password    EMP-010 Patricia Garcia  - Developer
+  michael.torres@testcompany.com   password    EMP-011 Michael Torres   - Developer
+
+===================================================================

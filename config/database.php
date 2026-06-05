@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'hris'),
 
     /*
     |--------------------------------------------------------------------------
@@ -109,8 +109,33 @@ return [
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
-            // 'encrypt' => env('DB_ENCRYPT', 'yes'),
-            // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
+            'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', false),
+        ],
+
+        'hris' => [
+            'driver' => 'sqlsrv',
+            'host' => env('HRIS_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('HRIS_DB_PORT', env('DB_PORT', '1433')),
+            'database' => env('HRIS_DB_DATABASE', 'UCDB_HRIS_APP'),
+            'username' => env('HRIS_DB_USERNAME', env('DB_USERNAME', 'sa')),
+            'password' => env('HRIS_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', false),
+        ],
+
+        'alpeta' => [
+            'driver' => 'sqlsrv',
+            'host' => env('ALPETA_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('ALPETA_DB_PORT', env('DB_PORT', '1433')),
+            'database' => env('ALPETA_DB_DATABASE', 'UCDB_HRIS_INSPECT'),
+            'username' => env('ALPETA_DB_USERNAME', env('DB_USERNAME', 'sa')),
+            'password' => env('ALPETA_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', false),
         ],
 
     ],

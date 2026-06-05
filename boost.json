@@ -1,11 +1,8 @@
 {
     "agents": [
-        "claude_code",
-        "cursor"
+        "copilot"
     ],
     "editors": [
-        "claude_code",
-        "cursor",
         "vscode"
     ],
     "guidelines": []

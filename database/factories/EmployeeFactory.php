@@ -3,7 +3,9 @@
 namespace Database\Factories;
 
 use App\Modules\Core\Models\Company;
+use App\Modules\Core\Models\Department;
 use App\Modules\Core\Models\Employee;
+use App\Modules\Core\Models\Position;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -20,10 +22,10 @@ class EmployeeFactory extends Factory
      */
     public function definition(): array
     {
-        $company = Company::factory();
-
         return [
-            'company_id' => $company,
+            'company_id' => Company::factory(),
+            'department_id' => Department::factory(),
+            'position_id' => Position::factory(),
             'employee_id' => $this->faker->unique()->numerify('EMP-####'),
             'first_name' => $this->faker->firstName(),
             'middle_name' => $this->faker->firstName(),
@@ -40,7 +42,6 @@ class EmployeeFactory extends Factory
             'date_resigned' => null,
             'employment_status' => 'active',
             'employment_type' => $this->faker->randomElement(['full-time', 'part-time', 'contract']),
-            'position' => $this->faker->jobTitle(),
             'salary' => $this->faker->numberBetween(20000, 100000),
             'bank_account' => $this->faker->bankAccountNumber(),
             'tin' => $this->faker->numerify('###-###-###-###'),

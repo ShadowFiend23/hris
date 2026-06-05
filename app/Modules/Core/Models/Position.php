@@ -2,6 +2,8 @@
 
 namespace App\Modules\Core\Models;
 
+use Database\Factories\PositionFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +11,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Position extends Model
 {
+    /** @use HasFactory<PositionFactory> */
+    use HasFactory;
+
     use SoftDeletes;
 
     protected $fillable = [
@@ -20,16 +25,36 @@ class Position extends Model
     protected function casts(): array
     {
         return [
-            'is_active'  => 'boolean',
+            'is_active' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
         ];
     }
 
-    public function company(): BelongsTo
+    protected static function newFactory(): PositionFactory
     {
-        return $this->belongsTo(Company::class);
+        return PositionFactory::new();
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    /**
+     * Get the company through the department relationship
+     */
+    public function company()
+    {
+        return $this->hasOneThrough(
+            Company::class,
+            Department::class,
+            'id', // Foreign key on departments table
+            'id', // Foreign key on companies table
+            'department_id', // Local key on positions table
+            'company_id' // Local key on departments table
+        );
     }
 
     public function manager(): BelongsTo

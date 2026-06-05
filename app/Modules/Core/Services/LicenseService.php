@@ -4,7 +4,7 @@ namespace App\Modules\Core\Services;
 
 use App\Modules\Core\Models\License;
 use App\Modules\Core\Models\Module;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class LicenseService
@@ -24,9 +24,6 @@ class LicenseService
 
     /**
      * Get array of active module codes for a company
-     *
-     * @param int $companyId
-     * @return array
      */
     public function getActiveModuleCodesForCompany(int $companyId): array
     {
@@ -37,15 +34,12 @@ class LicenseService
 
     /**
      * Create a default license with all active modules for a company
-     *
-     * @param int $companyId
-     * @return License
      */
     public function createDefaultLicense(int $companyId): License
     {
         $license = License::create([
             'company_id' => $companyId,
-            'license_key' => 'LIC-' . Str::random(12),
+            'license_key' => 'LIC-'.Str::random(12),
             'type' => 'enterprise',
             'status' => 'active',
             'valid_from' => now(),
@@ -63,9 +57,6 @@ class LicenseService
 
     /**
      * Get the active license for a company
-     *
-     * @param int $companyId
-     * @return License|null
      */
     public function getCompanyActiveLicense(int $companyId): ?License
     {

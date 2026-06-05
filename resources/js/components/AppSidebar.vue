@@ -14,11 +14,14 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Clock, DollarSign, Folder, LayoutGrid, Users } from 'lucide-vue-next';
+import { BookOpen, Clock, PhilippinePeso, Folder, LayoutGrid, Lock, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
 const page = usePage();
+
+const isAdmin = computed(() => (page.props.auth as any)?.isAdmin === true);
+const isEmployee = computed(() => !(page.props.auth as any)?.isAdmin && !(page.props.auth as any)?.isManager);
 
 const mainNavItems = computed(() => {
     const items: NavItem[] = [
@@ -35,7 +38,7 @@ const mainNavItems = computed(() => {
 
     // Add module navigation items based on enabled modules
     for (const module of enabledModules) {
-        if (module.code === 'hris') {
+        if (module.code === 'hris' && !isEmployee.value) {
             items.push({
                 title: 'Employees',
                 href: '/employees',
@@ -51,9 +54,18 @@ const mainNavItems = computed(() => {
             items.push({
                 title: 'Payroll',
                 href: '/payroll',
-                icon: DollarSign,
+                icon: PhilippinePeso,
             });
         }
+    }
+
+    // Licenses only for admins
+    if (isAdmin.value) {
+        items.push({
+            title: 'Licenses',
+            href: '/license/licenses',
+            icon: Lock,
+        });
     }
 
     return items;

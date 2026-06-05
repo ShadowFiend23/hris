@@ -10,35 +10,6 @@
       </p>
     </div>
 
-    <!-- Module Status Section -->
-    <div class="mb-8 p-6 bg-white rounded-lg border border-gray-200">
-      <h2 class="text-lg font-bold text-gray-900 mb-4">Available Modules</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div 
-          v-for="module in modules" 
-          :key="module.code"
-          :class="[
-            'p-4 rounded-lg border-2 transition-all',
-            module.enabled 
-              ? 'border-green-200 bg-green-50' 
-              : 'border-gray-200 bg-gray-50 opacity-60'
-          ]"
-        >
-          <div class="flex items-start justify-between mb-2">
-            <div>
-              <h3 class="font-semibold text-gray-900">{{ module.name }}</h3>
-              <p class="text-sm text-gray-600">{{ module.code }}</p>
-            </div>
-            <span v-if="module.enabled" class="bg-green-200 text-green-800 text-xs px-2 py-1 rounded-full">Active</span>
-            <span v-else class="bg-red-200 text-red-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
-              <Lock :size="12" /> Locked
-            </span>
-          </div>
-          <ModuleLockBadge :moduleName="module.name" :isLocked="!module.enabled" />
-        </div>
-      </div>
-    </div>
-
     <!-- Time Range Selector -->
     <div class="mb-6 flex items-center justify-between">
       <div class="flex gap-2">
@@ -75,7 +46,13 @@
               {{ card.change }}
             </p>
           </div>
-          <span class="text-3xl">{{ card.icon }}</span>
+          <div class="p-2 bg-blue-50 rounded-lg">
+            <Users v-if="card.icon === 'users'" :size="24" class="text-blue-600" />
+            <LayoutGrid v-else-if="card.icon === 'modules'" :size="24" class="text-blue-600" />
+            <UserCheck v-else-if="card.icon === 'attendance'" :size="24" class="text-blue-600" />
+            <CalendarDays v-else-if="card.icon === 'leaves'" :size="24" class="text-blue-600" />
+            <PhilippinePeso v-else-if="card.icon === 'payroll'" :size="24" class="text-blue-600" />
+          </div>
         </div>
       </div>
     </div>
@@ -88,11 +65,14 @@
           Headcount by Department
         </h3>
         <div class="mb-4">
-          <h4 class="text-2xl font-bold text-gray-900">310</h4>
-          <p class="text-green-600 text-sm font-medium">+2.5%</p>
+          <h4 class="text-2xl font-bold text-gray-900">{{ totalHeadcount }}</h4>
+          <p class="text-gray-500 text-sm">active employees</p>
         </div>
-        <div class="space-y-3">
-          <div v-for="(dept, index) in departmentData" :key="index">
+        <div v-if="departmentHeadcount.length === 0" class="text-center py-4 text-gray-500 text-sm">
+          No department data available
+        </div>
+        <div v-else class="space-y-3">
+          <div v-for="(dept, index) in departmentHeadcount" :key="index">
             <div class="flex justify-between items-center mb-1">
               <span class="text-sm font-medium text-gray-700">
                 {{ dept.name }}
@@ -103,7 +83,7 @@
               <div
                 class="bg-blue-600 h-2 rounded-full"
                 :style="{
-                  width: `${(dept.value / 150) * 100}%`,
+                  width: totalHeadcount > 0 ? `${(dept.value / totalHeadcount) * 100}%` : '0%',
                 }"
               />
             </div>
@@ -118,20 +98,22 @@
             <h3 class="text-lg font-bold text-gray-900">
               Hires vs. Departures
             </h3>
-            <p class="text-blue-600 text-2xl font-bold mt-2">+15</p>
-            <p class="text-green-600 text-sm font-medium">+5.8%</p>
+            <p class="text-blue-600 text-2xl font-bold mt-2">
+              {{ netHires >= 0 ? '+' : '' }}{{ netHires }}
+            </p>
+            <p class="text-gray-500 text-sm">net hires (last 6 months)</p>
           </div>
         </div>
         <div class="flex items-end justify-between h-64 gap-2">
-          <div v-for="(data, index) in hiresVsDeparturesData" :key="index" class="flex-1 flex flex-col items-center gap-2">
+          <div v-for="(data, index) in monthlyMovement" :key="index" class="flex-1 flex flex-col items-center gap-2">
             <div class="flex gap-1 h-40 items-end">
               <div
                 class="bg-blue-600 rounded-t w-3"
-                :style="{ height: `${(data.hires / 20) * 100}%` }"
+                :style="{ height: maxMovement > 0 ? `${(data.hires / maxMovement) * 100}%` : '0%' }"
               />
               <div
                 class="bg-red-600 rounded-t w-3"
-                :style="{ height: `${(data.departures / 20) * 100}%` }"
+                :style="{ height: maxMovement > 0 ? `${(data.departures / maxMovement) * 100}%` : '0%' }"
               />
             </div>
             <span class="text-xs text-gray-600">{{ data.month }}</span>
@@ -157,11 +139,36 @@ import { ref, computed } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import Layout from '@/components/Layout.vue'
 import ModuleLockBadge from '@/components/ModuleLockBadge.vue'
-import { Lock } from 'lucide-vue-next'
+import { Lock, Users, LayoutGrid, UserCheck, CalendarDays, PhilippinePeso } from 'lucide-vue-next'
 import { useModuleAccess } from '@/composables/useModuleAccess'
-import { useApi } from '@/composables/useApi'
 
-const { request } = useApi()
+interface Stats {
+  total_employees: number
+  total_departments: number
+  attendance_today_pct: number
+  pending_leaves: number
+  payroll_status: string
+}
+
+interface DepartmentHeadcount {
+  name: string
+  value: number
+}
+
+interface MonthlyMovement {
+  month: string
+  hires: number
+  departures: number
+}
+
+interface Props {
+  stats: Stats
+  department_headcount: DepartmentHeadcount[]
+  monthly_movement: MonthlyMovement[]
+}
+
+const props = defineProps<Props>()
+
 const page = usePage()
 const { getEnabledModules } = useModuleAccess()
 
@@ -170,34 +177,48 @@ const activeTab = ref('hr')
 
 const modules = computed(() => page.props.modules || [])
 
+const departmentHeadcount = computed(() => props.department_headcount ?? [])
+const monthlyMovement = computed(() => props.monthly_movement ?? [])
+
+const totalHeadcount = computed(() =>
+  departmentHeadcount.value.reduce((sum, d) => sum + d.value, 0),
+)
+
+const netHires = computed(() =>
+  monthlyMovement.value.reduce((sum, m) => sum + m.hires - m.departures, 0),
+)
+
+const maxMovement = computed(() =>
+  Math.max(...monthlyMovement.value.flatMap((m) => [m.hires, m.departures]), 1),
+)
+
 const kpiCards = computed(() => {
   const enabledModuleCount = modules.value.filter((m: any) => m.enabled).length
   return [
     {
       label: 'Total Employees',
-      value: '1,250',
-      icon: 'í±¥',
+      value: props.stats?.total_employees != null ? props.stats.total_employees.toLocaleString() : 'â€”',
+      icon: 'users',
     },
     {
       label: 'Active Modules',
       value: enabledModuleCount.toString(),
-      icon: 'í³¦',
+      icon: 'modules',
     },
     {
       label: 'Attendance Today',
-      value: '98.2%',
-      change: '+1.2%',
-      icon: 'í³Š',
+      value: props.stats?.attendance_today_pct != null ? `${props.stats.attendance_today_pct}%` : 'â€”',
+      icon: 'attendance',
     },
     {
       label: 'Pending Leaves',
-      value: '12',
-      icon: 'í³',
+      value: props.stats?.pending_leaves != null ? props.stats.pending_leaves.toString() : 'â€”',
+      icon: 'leaves',
     },
     {
       label: 'Payroll Cycle',
-      value: 'In Progress',
-      icon: 'í²°',
+      value: props.stats?.payroll_status ?? 'â€”',
+      icon: 'payroll',
     },
   ]
 })
@@ -206,23 +227,6 @@ const tabs = [
   { id: 'hr', label: 'HR Analytics' },
   { id: 'timekeeping', label: 'Timekeeping' },
   { id: 'payroll', label: 'Payroll' },
-]
-
-const hiresVsDeparturesData = [
-  { month: 'Jan', hires: 10, departures: 5 },
-  { month: 'Feb', hires: 15, departures: 8 },
-  { month: 'Mar', hires: 12, departures: 6 },
-  { month: 'Apr', hires: 18, departures: 7 },
-  { month: 'May', hires: 20, departures: 10 },
-  { month: 'Jun', hires: 16, departures: 9 },
-]
-
-const departmentData = [
-  { name: 'SALES', value: 85 },
-  { name: 'ENG', value: 120 },
-  { name: 'MKTG', value: 45 },
-  { name: 'OPS', value: 65 },
-  { name: 'HR', value: 15 },
 ]
 
 const getRangeLabel = (range: string) => {
@@ -235,17 +239,6 @@ const getRangeLabel = (range: string) => {
       return 'Last 90 Days'
     default:
       return range
-  }
-}
-
-// Example function to fetch dashboard data from backend
-const fetchDashboardData = async () => {
-  try {
-    // const data = await request('/dashboard')
-    // Update state with data
-    console.log('Dashboard data would be fetched here')
-  } catch (err) {
-    console.error('Failed to fetch dashboard data:', err)
   }
 }
 </script>

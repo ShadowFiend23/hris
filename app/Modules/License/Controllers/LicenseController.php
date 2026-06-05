@@ -10,18 +10,13 @@ use Inertia\Inertia;
 
 class LicenseController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware(['auth']);
-    }
-
     /**
      * Display all licenses for the authenticated user's company
      */
     public function index()
     {
         $user = auth()->user();
-        if (!$user || !$user->company_id) {
+        if (! $user || ! $user->company_id) {
             return redirect()->route('home');
         }
 
@@ -40,7 +35,7 @@ class LicenseController extends Controller
     public function show(License $license)
     {
         $user = auth()->user();
-        if (!$user || $license->company_id !== $user->company_id) {
+        if (! $user || $license->company_id !== $user->company_id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -58,12 +53,12 @@ class LicenseController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        if (!$user || !$user->company_id) {
+        if (! $user || ! $user->company_id) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
         // Check authorization - only admins can create licenses
-        if (!$user->roles->contains('slug', 'admin')) {
+        if (! $user->roles->contains('slug', 'admin')) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -94,12 +89,12 @@ class LicenseController extends Controller
     public function update(Request $request, License $license)
     {
         $user = auth()->user();
-        if (!$user || $license->company_id !== $user->company_id) {
+        if (! $user || $license->company_id !== $user->company_id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         // Check authorization
-        if (!$user->roles->contains('slug', 'admin')) {
+        if (! $user->roles->contains('slug', 'admin')) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -126,12 +121,12 @@ class LicenseController extends Controller
     public function attachModule(Request $request, License $license)
     {
         $user = auth()->user();
-        if (!$user || $license->company_id !== $user->company_id) {
+        if (! $user || $license->company_id !== $user->company_id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         // Check authorization
-        if (!$user->roles->contains('slug', 'admin')) {
+        if (! $user->roles->contains('slug', 'admin')) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -152,12 +147,12 @@ class LicenseController extends Controller
     public function detachModule(Request $request, License $license, Module $module)
     {
         $user = auth()->user();
-        if (!$user || $license->company_id !== $user->company_id) {
+        if (! $user || $license->company_id !== $user->company_id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         // Check authorization
-        if (!$user->roles->contains('slug', 'admin')) {
+        if (! $user->roles->contains('slug', 'admin')) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 

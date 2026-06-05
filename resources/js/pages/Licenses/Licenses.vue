@@ -17,6 +17,15 @@ import { Plus } from 'lucide-vue-next';
 const page = usePage();
 const licenses = computed(() => page.props.licenses?.data || []);
 
+const perPage = ref(5);
+const currentPage = ref(1);
+const totalPages = computed(() => Math.ceil(licenses.value.length / perPage.value));
+const paginatedLicenses = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value;
+  return licenses.value.slice(start, start + perPage.value);
+});
+const changePerPage = () => { currentPage.value = 1; };
+
 const showCreateForm = ref(false);
 const isSubmitting = ref(false);
 
@@ -86,7 +95,7 @@ const cancelCreateLicense = () => {
         <!-- Create License Form -->
         <div v-if="showCreateForm" class="bg-white p-6 border rounded-lg space-y-4">
             <h3 class="text-lg font-semibold">Create New License</h3>
-            
+
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">License Key</label>
@@ -193,7 +202,7 @@ const cancelCreateLicense = () => {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    <TableRow v-for="license in licenses" :key="license.id">
+                    <TableRow v-for="license in paginatedLicenses" :key="license.id">
                         <TableCell class="font-mono text-sm">{{ license.license_key }}</TableCell>
                         <TableCell class="capitalize">{{ license.type }}</TableCell>
                         <TableCell>
@@ -216,6 +225,45 @@ const cancelCreateLicense = () => {
                     </TableRow>
                 </TableBody>
             </Table>
+        </div>
+        <!-- Pagination -->
+        <div class="flex items-center border-t border-gray-200 bg-white px-6 py-4">
+          <div class="flex w-1/3 items-center gap-2">
+            <span class="text-sm text-gray-600">Per page:</span>
+            <select
+              v-model="perPage"
+              @change="changePerPage"
+              class="rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option v-for="n in [5, 10, 25, 50]" :key="n" :value="n">{{ n }}</option>
+            </select>
+          </div>
+          <div class="flex w-1/3 justify-center gap-2">
+            <button
+              @click="currentPage--"
+              :disabled="currentPage <= 1"
+              class="rounded-lg border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400"
+              v-html="'&laquo;'"
+            />
+            <button
+              v-for="p in totalPages"
+              :key="p"
+              @click="currentPage = p"
+              :class="[
+                'rounded-lg px-3 py-1 text-sm font-medium transition-colors',
+                currentPage === p ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50',
+              ]"
+            >{{ p }}</button>
+            <button
+              @click="currentPage++"
+              :disabled="currentPage >= totalPages"
+              class="rounded-lg border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400"
+              v-html="'&raquo;'"
+            />
+          </div>
+          <div class="flex w-1/3 justify-end">
+            <p class="text-sm text-gray-600">{{ licenses.length }} total licenses</p>
+          </div>
         </div>
     </div>
 </template>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Modules\Core\Models\Employee;
 use App\Modules\Core\Services\LicenseService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
@@ -46,12 +47,12 @@ class HandleInertiaRequests extends Middleware
         if ($request->user() && $request->user()->company_id) {
             $companyId = $request->user()->company_id;
             $activeModuleCodes = $licenseService->getActiveModuleCodesForCompany($companyId);
-            
+
             // Get all active modules from database
             $allModules = \App\Modules\Core\Models\Module::where('is_active', true)
                 ->orderBy('order')
                 ->get();
-            
+
             // Transform to include enabled status
             $moduleData = $allModules->map(fn ($module) => [
                 'code' => $module->code,
@@ -80,6 +81,14 @@ class HandleInertiaRequests extends Middleware
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user(),
+                'permissions' => $request->user()
+                    ? $request->user()->load('roles.permissions')->getPermissionSlugs()
+                    : [],
+                'isAdmin' => $request->user() ? $request->user()->hasRole('admin') : false,
+                'isManager' => $request->user() ? $request->user()->hasRole('manager') : false,
+                'employeeId' => $request->user()
+                    ? Employee::where('user_id', $request->user()->id)->value('id')
+                    : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'modules' => $moduleData,

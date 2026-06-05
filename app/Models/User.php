@@ -79,4 +79,40 @@ class User extends Authenticatable
     {
         return $this->hasOne(Employee::class);
     }
+
+    /**
+     * Check if the user has a specific role by slug.
+     */
+    public function hasRole(string $slug): bool
+    {
+        return $this->roles->contains('slug', $slug);
+    }
+
+    /**
+     * Check if the user has a specific permission by slug.
+     */
+    public function hasPermission(string $slug): bool
+    {
+        foreach ($this->roles as $role) {
+            if ($role->permissions->contains('slug', $slug)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get all permission slugs the user has across all roles.
+     *
+     * @return list<string>
+     */
+    public function getPermissionSlugs(): array
+    {
+        return $this->roles
+            ->flatMap(fn ($role) => $role->permissions->pluck('slug'))
+            ->unique()
+            ->values()
+            ->all();
+    }
 }

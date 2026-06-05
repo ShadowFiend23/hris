@@ -2,11 +2,16 @@
 
 namespace App\Modules\Core\Models;
 
+use Database\Factories\ModuleFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Module extends Model
 {
+    /** @use HasFactory<ModuleFactory> */
+    use HasFactory;
+
     public $timestamps = true;
 
     protected $table = 'modules';
@@ -19,6 +24,11 @@ class Module extends Model
         'order',
         'is_active',
     ];
+
+    protected static function newFactory(): ModuleFactory
+    {
+        return ModuleFactory::new();
+    }
 
     protected function casts(): array
     {

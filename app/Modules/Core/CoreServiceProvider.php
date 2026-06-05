@@ -4,6 +4,7 @@ namespace App\Modules\Core;
 
 use App\Modules\Core\Services\LicenseService;
 use App\Modules\Core\Services\ModuleService;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 class CoreServiceProvider extends ServiceProvider
@@ -23,8 +24,15 @@ class CoreServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Load core routes
-        $this->loadRoutesFrom(__DIR__.'/routes/web.php');
+        // Load core routes with web middleware
+        Route::middleware('web')
+            ->group(__DIR__.'/routes/web.php');
+
+        // Load core API routes
+        if (file_exists(__DIR__.'/routes/api.php')) {
+            Route::middleware(['web', 'auth'])
+                ->group(__DIR__.'/routes/api.php');
+        }
 
         // Load migrations
         $this->loadMigrationsFrom(base_path('database/migrations'));

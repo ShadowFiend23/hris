@@ -2,6 +2,8 @@
 
 namespace App\Modules\Core\Models;
 
+use Database\Factories\DepartmentFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +11,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Department extends Model
 {
+    /** @use HasFactory<DepartmentFactory> */
+    use HasFactory;
+
     use SoftDeletes;
 
     protected $fillable = [
@@ -30,6 +35,11 @@ class Department extends Model
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
         ];
+    }
+
+    protected static function newFactory(): DepartmentFactory
+    {
+        return DepartmentFactory::new();
     }
 
     public function company(): BelongsTo

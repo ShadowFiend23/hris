@@ -9,27 +9,35 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CheckModuleAccess
 {
-    public function __construct(protected LicenseService $licenseService)
-    {
-    }
+    public function __construct(protected LicenseService $licenseService) {}
 
     /**
      * Handle an incoming request.
      */
     public function handle(Request $request, Closure $next, string $moduleCode): Response
     {
-        if (!$request->user()) {
-            return response()->json(['message' => 'Unauthorized'], 401);
+        if (! $request->user()) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Unauthorized'], 401);
+            }
+
+            return redirect()->route('login');
         }
 
-        if (!$request->user()->company_id) {
-            return response()->json(['message' => 'User not assigned to a company'], 403);
+        if (! $request->user()->company_id) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'User not assigned to a company'], 403);
+            }
+            abort(403, 'User not assigned to a company');
         }
 
-        if (!$this->licenseService->hasModuleAccess($request->user()->company_id, $moduleCode)) {
-            return response()->json([
-                'message' => "Your company does not have access to the {$moduleCode} module",
-            ], 403);
+        if (! $this->licenseService->hasModuleAccess($request->user()->company_id, $moduleCode)) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => "Your company does not have access to the {$moduleCode} module",
+                ], 403);
+            }
+            abort(403, "Your company does not have access to the {$moduleCode} module");
         }
 
         return $next($request);
