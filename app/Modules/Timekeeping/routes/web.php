@@ -5,6 +5,7 @@ use App\Modules\Timekeeping\Controllers\DtrController;
 use App\Modules\Timekeeping\Controllers\LeaveTypeController;
 use App\Modules\Timekeeping\Controllers\ShiftTemplatesController;
 use App\Modules\Timekeeping\Controllers\TimekeepingController;
+use App\Modules\Timekeeping\Controllers\TimekeepingSettingsController;
 use Illuminate\Support\Facades\Route;
 
 // Timekeeping routes - require auth and timekeeping module access
@@ -21,7 +22,13 @@ Route::middleware(['auth', 'module.access:timekeeping'])->group(function () {
 
     // HR Settings — admin-only leave type & shift template management
     Route::prefix('hr-settings')->name('hr-settings.')->group(function () {
-        Route::get('/leave-types', [LeaveTypeController::class, 'index'])->name('leave-types.index');
+        // Timekeeping Settings (Leave + OT toggles, approval chains, leave types)
+        Route::get('/leave-types', [TimekeepingSettingsController::class, 'index'])->name('timekeeping.index');
+        Route::patch('/timekeeping/toggle-leave', [TimekeepingSettingsController::class, 'toggleLeave'])->name('timekeeping.toggle-leave');
+        Route::patch('/timekeeping/toggle-ot', [TimekeepingSettingsController::class, 'toggleOt'])->name('timekeeping.toggle-ot');
+        Route::post('/timekeeping/approval-chain', [TimekeepingSettingsController::class, 'saveApprovalChain'])->name('timekeeping.approval-chain');
+
+        // Leave type CRUD (store/update/destroy stay on LeaveTypeController)
         Route::post('/leave-types', [LeaveTypeController::class, 'store'])->name('leave-types.store');
         Route::put('/leave-types/{leaveType}', [LeaveTypeController::class, 'update'])->name('leave-types.update');
         Route::delete('/leave-types/{leaveType}', [LeaveTypeController::class, 'destroy'])->name('leave-types.destroy');

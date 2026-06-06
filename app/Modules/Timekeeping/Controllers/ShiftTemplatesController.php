@@ -7,22 +7,12 @@ use App\Modules\Timekeeping\Models\ShiftTemplate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class ShiftTemplatesController extends Controller
 {
-    public function index(): Response
+    public function index(): RedirectResponse
     {
-        $companyId = Auth::user()->employee?->company_id;
-
-        $templates = ShiftTemplate::where('company_id', $companyId)
-            ->orderBy('name')
-            ->get();
-
-        return Inertia::render('HRSettings/ShiftTemplates', [
-            'shiftTemplates' => $templates,
-        ]);
+        return redirect(route('hr-settings.timekeeping.index').'?sub=shifts');
     }
 
     public function store(Request $request): RedirectResponse
@@ -45,7 +35,7 @@ class ShiftTemplatesController extends Controller
             'is_active' => true,
         ]));
 
-        return redirect()->route('hr-settings.shift-templates.index')
+        return redirect(route('hr-settings.timekeeping.index').'?sub=shifts')
             ->with('success', 'Shift template created successfully.');
     }
 
@@ -67,7 +57,7 @@ class ShiftTemplatesController extends Controller
 
         $shiftTemplate->update($data);
 
-        return redirect()->route('hr-settings.shift-templates.index')
+        return redirect(route('hr-settings.timekeeping.index').'?sub=shifts')
             ->with('success', 'Shift template updated successfully.');
     }
 
@@ -77,7 +67,7 @@ class ShiftTemplatesController extends Controller
 
         $shiftTemplate->update(['is_active' => false]);
 
-        return redirect()->route('hr-settings.shift-templates.index')
+        return redirect(route('hr-settings.timekeeping.index').'?sub=shifts')
             ->with('success', 'Shift template deactivated.');
     }
 

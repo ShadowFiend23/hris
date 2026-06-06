@@ -13,6 +13,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 class SyncAlpetaLogsJob implements ShouldQueue
@@ -30,6 +31,17 @@ class SyncAlpetaLogsJob implements ShouldQueue
 
     public function handle(): void
     {
+        $table = 'auth_logs_'.$this->yearMonth;
+
+        if (! Schema::connection('alpeta')->hasTable($table)) {
+            Log::channel('alpeta_sync')->warning("Skipped sync: table [{$table}] does not exist in the Alpeta database.", [
+                'month' => $this->yearMonth,
+                'triggered_by' => $this->triggeredBy,
+            ]);
+
+            return;
+        }
+
         $syncLog = BiometricSyncLog::create([
             'month' => $this->yearMonth,
             'started_at' => now(),

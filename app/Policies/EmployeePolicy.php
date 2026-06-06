@@ -37,11 +37,11 @@ class EmployeePolicy
             return true;
         }
 
-        // Managers can view employees in their own department
+        // Managers can only view employees within their reporting subtree
         if ($user->hasRole('manager')) {
             $managerEmployee = \App\Modules\Core\Models\Employee::where('user_id', $user->id)->first();
 
-            return $managerEmployee && (int) $managerEmployee->department_id === (int) $employee->department_id;
+            return $managerEmployee && in_array($employee->id, $managerEmployee->getAllSubordinateIds(), true);
         }
 
         return $user->hasPermission('hris.employees.view');
@@ -61,7 +61,7 @@ class EmployeePolicy
     public function update(User $user, Employee $employee): bool
     {
         return $user->hasPermission('hris.employees.edit')
-            && $user->company_id === $employee->company_id;
+            && (int) $user->company_id === (int) $employee->company_id;
     }
 
     /**
@@ -74,7 +74,7 @@ class EmployeePolicy
         }
 
         return $user->hasPermission('hris.employees.delete')
-            && $user->company_id === $employee->company_id;
+            && (int) $user->company_id === (int) $employee->company_id;
     }
 
     /**
@@ -83,7 +83,7 @@ class EmployeePolicy
     public function restore(User $user, Employee $employee): bool
     {
         return $user->hasPermission('hris.employees.edit')
-            && $user->company_id === $employee->company_id;
+            && (int) $user->company_id === (int) $employee->company_id;
     }
 
     /**

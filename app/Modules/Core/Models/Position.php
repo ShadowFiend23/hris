@@ -19,6 +19,7 @@ class Position extends Model
     protected $fillable = [
         'department_id',
         'position_name',
+        'reports_to_position_id',
         'is_active',
     ];
 
@@ -65,5 +66,37 @@ class Position extends Model
     public function employees(): HasMany
     {
         return $this->hasMany(Employee::class);
+    }
+
+    public function reportsTo(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reports_to_position_id');
+    }
+
+    public function directReports(): HasMany
+    {
+        return $this->hasMany(self::class, 'reports_to_position_id');
+    }
+
+    /** Detect if setting reports_to_position_id to $candidateId would create a cycle. */
+    public function wouldCreateCycle(int $candidateId): bool
+    {
+        $visited = [];
+        $currentId = $candidateId;
+
+        while ($currentId !== null) {
+            if ($currentId === $this->id) {
+                return true;
+            }
+
+            if (in_array($currentId, $visited, true)) {
+                break;
+            }
+
+            $visited[] = $currentId;
+            $currentId = self::withTrashed()->where('id', $currentId)->value('reports_to_position_id');
+        }
+
+        return false;
     }
 }

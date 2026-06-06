@@ -10,10 +10,16 @@
     <div class="mb-6 border-b border-gray-200">
       <nav class="flex gap-6">
         <Link
+          href="/hr-settings/employee-settings"
+          class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
+        >
+          Employee Settings
+        </Link>
+        <Link
           href="/hr-settings/leave-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
-          Leave Types
+          Timekeeping Settings
         </Link>
         <Link
           href="/hr-settings/payroll"
@@ -25,25 +31,19 @@
           href="/hr-settings/allowance-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
-          Allowance Types
+          Allowance Settings
         </Link>
         <Link
-          href="/hr-settings/shift-templates"
+          href="/hr-settings/loan-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
-          Shift Templates
+          Loan Settings
         </Link>
         <Link
           href="/hr-settings/holidays"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Holidays
-        </Link>
-        <Link
-          href="/hr-settings/loan-types"
-          class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
-        >
-          Loan Types
         </Link>
       </nav>
     </div>

@@ -79,15 +79,52 @@
         </h2>
         <form @submit.prevent="submitForm">
           <div class="space-y-4">
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">Employee ID</label>
-              <input
-                v-model.number="form.employee_id"
-                type="number"
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter employee numeric ID"
-                required
-              />
+            <div class="relative" ref="autocompleteWrap">
+              <label class="mb-1 block text-sm font-medium text-gray-700">Employee</label>
+              <div class="relative">
+                <input
+                  v-model="employeeQuery"
+                  type="text"
+                  placeholder="Name or ID…"
+                  autocomplete="off"
+                  class="w-full rounded-lg border border-gray-300 px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  @input="onEmployeeInput"
+                  @focus="showSuggestions = suggestions.length > 0"
+                  @keydown.escape="showSuggestions = false"
+                  @keydown.down.prevent="highlightNext"
+                  @keydown.up.prevent="highlightPrev"
+                  @keydown.enter.prevent="selectHighlighted"
+                />
+                <button v-if="selectedEmployeeSuggestion" @click="clearEmployee" type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <X :size="14" />
+                </button>
+                <Search v-else :size="14" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+
+              <div v-if="suggestionsLoading" class="absolute z-20 mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-400 shadow-lg">
+                Searching…
+              </div>
+              <ul
+                v-else-if="showSuggestions && suggestions.length > 0"
+                class="absolute z-20 mt-1 w-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg"
+                style="max-height: 220px"
+              >
+                <li
+                  v-for="(emp, idx) in suggestions"
+                  :key="emp.id"
+                  @mousedown.prevent="selectEmployee(emp)"
+                  :class="['cursor-pointer px-3 py-2 text-sm', idx === highlightedIndex ? 'bg-blue-50 text-blue-700' : 'text-gray-800 hover:bg-gray-50']"
+                >
+                  <span class="font-medium">{{ emp.last_name }},</span> {{ emp.first_name }}
+                  <span class="ml-1 text-xs text-gray-400">{{ emp.employee_id }}</span>
+                </li>
+              </ul>
+              <div
+                v-else-if="showSuggestions && employeeQuery.length >= 2"
+                class="absolute z-20 mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-500 shadow-lg"
+              >
+                No employees found
+              </div>
               <p v-if="form.errors.employee_id" class="mt-1 text-xs text-red-600">{{ form.errors.employee_id }}</p>
             </div>
 
@@ -407,9 +444,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { Link, useForm, router } from '@inertiajs/vue3'
-import { Plus, Loader2, AlertTriangle, CreditCard } from 'lucide-vue-next'
+import { Plus, Loader2, AlertTriangle, CreditCard, Search, X } from 'lucide-vue-next'
 import Layout from '@/components/Layout.vue'
 
 interface Employee {
@@ -480,6 +517,82 @@ const showModal = ref(false)
 const editingLoan = ref<Loan | null>(null)
 const deletingLoan = ref<Loan | null>(null)
 
+// Employee autocomplete
+interface EmployeeSuggestion { id: number; employee_id: string; first_name: string; last_name: string }
+const employeeQuery = ref('')
+const selectedEmployeeSuggestion = ref<EmployeeSuggestion | null>(null)
+const suggestions = ref<EmployeeSuggestion[]>([])
+const showSuggestions = ref(false)
+const suggestionsLoading = ref(false)
+const highlightedIndex = ref(-1)
+const autocompleteWrap = ref<HTMLElement | null>(null)
+let debounceTimer: ReturnType<typeof setTimeout>
+
+const onEmployeeInput = () => {
+  selectedEmployeeSuggestion.value = null
+  form.employee_id = null
+  clearTimeout(debounceTimer)
+  if (employeeQuery.value.length < 2) {
+    suggestions.value = []
+    showSuggestions.value = false
+    return
+  }
+  suggestionsLoading.value = true
+  showSuggestions.value = true
+  debounceTimer = setTimeout(fetchSuggestions, 280)
+}
+
+const fetchSuggestions = async () => {
+  try {
+    const res = await fetch(`/api/core/employees?search=${encodeURIComponent(employeeQuery.value)}&is_active=1`, {
+      headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin',
+    })
+    if (!res.ok) { return }
+    const json = await res.json()
+    const list: any[] = json.data ?? json
+    suggestions.value = list
+      .map((e: any) => ({ id: e.id, employee_id: e.employee_id, first_name: e.first_name, last_name: e.last_name }))
+      .sort((a, b) => a.last_name.localeCompare(b.last_name))
+      .slice(0, 8)
+    highlightedIndex.value = -1
+  } finally {
+    suggestionsLoading.value = false
+  }
+}
+
+const selectEmployee = (emp: EmployeeSuggestion) => {
+  selectedEmployeeSuggestion.value = emp
+  form.employee_id = emp.id
+  employeeQuery.value = `${emp.last_name}, ${emp.first_name}`
+  showSuggestions.value = false
+  suggestions.value = []
+}
+
+const clearEmployee = () => {
+  selectedEmployeeSuggestion.value = null
+  form.employee_id = null
+  employeeQuery.value = ''
+  suggestions.value = []
+  showSuggestions.value = false
+}
+
+const highlightNext = () => { if (highlightedIndex.value < suggestions.value.length - 1) { highlightedIndex.value++ } }
+const highlightPrev = () => { if (highlightedIndex.value > 0) { highlightedIndex.value-- } }
+const selectHighlighted = () => {
+  if (highlightedIndex.value >= 0 && suggestions.value[highlightedIndex.value]) {
+    selectEmployee(suggestions.value[highlightedIndex.value])
+  }
+}
+
+const resetAutocomplete = () => {
+  selectedEmployeeSuggestion.value = null
+  employeeQuery.value = ''
+  suggestions.value = []
+  showSuggestions.value = false
+  highlightedIndex.value = -1
+}
+
 const form = useForm({
   employee_id: null as number | null,
   type: loanTypes[0]?.code ?? '',
@@ -516,6 +629,7 @@ const openCreate = () => {
   amortizationManuallyEdited.value = false
   editingLoan.value = null
   form.reset()
+  resetAutocomplete()
   showModal.value = true
 }
 
@@ -529,6 +643,11 @@ const openEdit = (loan: Loan) => {
   form.start_date = loan.start_date
   form.end_date = loan.end_date ?? ''
   form.notes = loan.notes ?? ''
+  resetAutocomplete()
+  if (loan.employee) {
+    selectedEmployeeSuggestion.value = loan.employee as EmployeeSuggestion
+    employeeQuery.value = `${loan.employee.last_name}, ${loan.employee.first_name}`
+  }
   showModal.value = true
 }
 
@@ -536,6 +655,7 @@ const closeModal = () => {
   showModal.value = false
   editingLoan.value = null
   form.reset()
+  resetAutocomplete()
 }
 
 const submitForm = () => {
@@ -567,4 +687,12 @@ const loanStatusColor = (status: string) =>
     completed: 'bg-green-100 text-green-700',
     defaulted: 'bg-red-100 text-red-700',
   })[status] ?? 'bg-gray-100 text-gray-700'
+
+onMounted(() => {
+  document.addEventListener('click', (e) => {
+    if (autocompleteWrap.value && !autocompleteWrap.value.contains(e.target as Node)) {
+      showSuggestions.value = false
+    }
+  })
+})
 </script>

@@ -1,4 +1,8 @@
 <laravel-boost-guidelines>
+
+## IMPORTANT: Always Read This File
+**Before starting any task, you MUST read this CLAUDE.md file in its entirety.** This file contains critical project-specific guidelines, conventions, and context that override default behavior. Never assume you know the project structure or conventions without reading this file first.
+
 === foundation rules ===
 
 # Laravel Boost Guidelines
@@ -434,3 +438,149 @@ If your application uses the `<Form>` component from Inertia, you can use Wayfin
 | decoration-slice | box-decoration-slice |
 | decoration-clone | box-decoration-clone |
 </laravel-boost-guidelines>
+
+# HRIS Project Context
+
+## What This Application Is
+A **Human Resource Information System (HRIS)** for Philippine-based companies. It handles the full employee lifecycle — from hiring to payroll — with specific support for Philippine statutory contributions (SSS, PhilHealth, PagIBIG) and labor law compliance (overtime, night differential, holiday pay).
+
+## Modular Architecture
+The app uses a module-based structure inside `app/Modules/`. Each module is self-contained with its own Models, Controllers, Form Requests, and routes.
+
+| Module | Path | Responsibility |
+|---|---|---|
+| Core | `app/Modules/Core/` | Employees, departments, roles/permissions, dashboard |
+| Timekeeping | `app/Modules/Timekeeping/` | Attendance, DTR, leaves, shifts, overtime, biometric sync |
+| Payroll | `app/Modules/Payroll/` | Payroll periods, payslips, earnings/deductions, loans |
+| License | `app/Modules/License/` | Multi-company licensing, module feature gating |
+
+## Key Conventions
+- New features belong inside the appropriate module's directory — never in `app/Http/` directly.
+- Module routes are registered via each module's `routes/web.php`, not the root `routes/web.php`.
+- All routes are protected by `auth` and `module.access:{module}` middleware.
+- Use `module.access` middleware to gate features per license.
+
+## Domain Knowledge (Philippine Payroll)
+- Statutory deductions: SSS, PhilHealth, PagIBIG — calculated via `ContributionBracket` model.
+- Overtime is calculated against `WorkPolicy` settings (OT rate, rest day rate, holiday rate).
+- Night differential applies to hours worked between 10PM–6AM.
+- Payroll period lifecycle: `draft → processing → finalized → closed`.
+- Attendance splits the day: `clock_in → morning_out → afternoon_in → clock_out`.
+- Biometric data syncs via the Alpeta terminal integration (`BiometricTerminal`, `AlpetaLog`).
+
+## Important Models & Relationships
+- `Employee` → belongs to `Company`, `Department`, `Position`; has many `AttendanceRecord`, `LeaveRequest`, `PayrollItem`, `EmployeeAllowance`, `Loan`
+- `AttendanceRecord` → belongs to `Employee`; tracks `clock_in`, `morning_out`, `afternoon_in`, `clock_out`, `total_hours`, `status`
+- `PayrollPeriod` → has many `PayrollItem` → each has `PayrollEarning[]` and `PayrollDeduction[]`
+- `ShiftTemplate` → defines work hours and break times; assigned to employees via `EmployeeSchedule`
+- `Role` ↔ `Permission` (many-to-many); `User` ↔ `Role` (many-to-many)
+
+## Frontend Conventions
+- Pages live in `resources/js/pages/` (Inertia components).
+- Reusable UI components live in `resources/js/components/ui/` (Shadcn-style).
+- Feature-specific components go in `resources/js/components/{ModuleName}/`.
+- Always import controller actions from `@/actions/` (Wayfinder-generated) — never hardcode URLs.
+- Named routes are imported from `@/routes/` for non-controller routes.
+- All pages must support **dark mode** using Tailwind `dark:` variants.
+
+## Table Pagination + Search Convention
+
+**Every data table must include client-side pagination and search.** No table should be added without both.
+
+### Script setup (Vue Composition API)
+
+Replace `xxx`/`Xxx` with the entity name (e.g. `dept`/`Dept`). `sourceData` is either `props.items` or a reactive `ref`.
+
+```typescript
+import { computed, ref, watch } from 'vue'
+
+const xxxSearch = ref('')
+const xxxPage = ref(1)
+const xxxPerPage = ref(5) // 5 for settings tables; 10 for report tables
+
+const filteredXxx = computed(() => {
+  const q = xxxSearch.value.toLowerCase()
+  if (!q) { return sourceData }
+  return sourceData.filter(item =>
+    item.fieldA.toLowerCase().includes(q) || (item.fieldB ?? '').toLowerCase().includes(q),
+  )
+})
+
+const xxxTotalPages = computed(() => Math.max(1, Math.ceil(filteredXxx.value.length / xxxPerPage.value)))
+const paginatedXxx = computed(() => {
+  const start = (xxxPage.value - 1) * xxxPerPage.value
+  return filteredXxx.value.slice(start, start + xxxPerPage.value)
+})
+
+function changeXxxPerPage(): void { xxxPage.value = 1 }
+
+watch(xxxSearch, () => { xxxPage.value = 1 })
+// Also add: watch(() => sourceData, () => { xxxPage.value = 1 }) when data reloads (e.g. report tables)
+```
+
+### Template — Search input (right-aligned row above table)
+
+```html
+<div class="mb-3 flex justify-end">
+  <input v-model="xxxSearch" type="text" placeholder="Search..."
+    class="w-64 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
+</div>
+```
+
+### Template — `<tbody>` empty states + rows
+
+```html
+<tr v-if="sourceData.length === 0">
+  <td colspan="N" class="px-6 py-12 text-center text-gray-400 dark:text-gray-500">No X configured yet.</td>
+</tr>
+<tr v-else-if="filteredXxx.length === 0">
+  <td colspan="N" class="px-6 py-12 text-center text-gray-400 dark:text-gray-500">No X match your search.</td>
+</tr>
+<tr v-for="item in paginatedXxx" :key="item.id"><!-- cells --></tr>
+```
+
+### Template — Pagination footer (after `</table>`, inside the table wrapper `<div>`)
+
+```html
+<div v-if="sourceData.length > 0" class="flex items-center border-t border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-800">
+  <div class="flex w-1/3 items-center gap-2">
+    <span class="text-sm text-gray-600 dark:text-gray-400">Per page:</span>
+    <select v-model="xxxPerPage" @change="changeXxxPerPage"
+      class="rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+      <option v-for="n in [5, 10, 25, 50]" :key="n" :value="n">{{ n }}</option>
+    </select>
+  </div>
+  <div class="flex w-1/3 justify-center gap-2">
+    <button @click="xxxPage--" :disabled="xxxPage <= 1"
+      class="rounded-lg border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+      v-html="'&laquo;'" />
+    <button v-for="p in xxxTotalPages" :key="p" @click="xxxPage = p"
+      :class="['rounded-lg px-3 py-1 text-sm font-medium transition-colors', xxxPage === p ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700']">
+      {{ p }}
+    </button>
+    <button @click="xxxPage++" :disabled="xxxPage >= xxxTotalPages"
+      class="rounded-lg border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+      v-html="'&raquo;'" />
+  </div>
+  <div class="flex w-1/3 justify-end">
+    <p class="text-sm text-gray-600 dark:text-gray-400">
+      {{ xxxSearch ? `${filteredXxx.length} of ${sourceData.length}` : sourceData.length }} items
+    </p>
+  </div>
+</div>
+```
+
+### Per-page defaults
+
+| Table type | Default | Options |
+|---|---|---|
+| Settings / config tables | `5` | `[5, 10, 25, 50]` |
+| Report tables | `10` | `[10, 25, 50]` |
+
+## Testing Notes
+- Feature tests live in `tests/Feature/`, organized by module (e.g., `tests/Feature/Timekeeping/`).
+- Use model factories and existing factory states when setting up test data.
+- Payroll and attendance tests require careful date/time setup — use `Carbon::setTestNow()` where needed.
+
+## Reference
+- Full system architecture: [docs/system-architecture.md](docs/system-architecture.md)

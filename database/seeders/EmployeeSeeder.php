@@ -64,12 +64,13 @@ class EmployeeSeeder extends Seeder
             'employment_type' => 'full_time', 'date_hired' => now()->subMonths(34),
         ]);
 
-        // --- Tier 2: Team Leads (Manager role) ---
+        // --- Tier 2: Team Leads / Supervisors (Manager role, report to Directors) ---
         $emp005 = $this->createEmployee($company, $itDept, $posItLead, $managerRole, [
             'employee_id' => 'EMP-005', 'first_name' => 'Jose', 'last_name' => 'Cruz',
             'alpeta_employee_id' => '2069', 'salary' => 65000,
             'gender' => 'male', 'date_of_birth' => '1985-11-08',
             'employment_type' => 'full_time', 'date_hired' => now()->subMonths(28),
+            'supervisor_id' => $emp003->id,
         ]);
 
         $emp006 = $this->createEmployee($company, $itDept, $posItLead, $managerRole, [
@@ -77,6 +78,7 @@ class EmployeeSeeder extends Seeder
             'alpeta_employee_id' => '2072', 'salary' => 62000,
             'gender' => 'female', 'date_of_birth' => '1987-02-14',
             'employment_type' => 'full_time', 'date_hired' => now()->subMonths(26),
+            'supervisor_id' => $emp003->id,
         ]);
 
         $emp007 = $this->createEmployee($company, $opsDept, $posOpsSupervisor, $managerRole, [
@@ -84,6 +86,7 @@ class EmployeeSeeder extends Seeder
             'alpeta_employee_id' => '2074', 'salary' => 58000,
             'gender' => 'male', 'date_of_birth' => '1983-09-30',
             'employment_type' => 'full_time', 'date_hired' => now()->subMonths(24),
+            'supervisor_id' => $emp004->id,
         ]);
 
         $emp008 = $this->createEmployee($company, $opsDept, $posOpsSupervisor, $managerRole, [
@@ -91,6 +94,7 @@ class EmployeeSeeder extends Seeder
             'alpeta_employee_id' => '2077', 'salary' => 55000,
             'gender' => 'female', 'date_of_birth' => '1986-06-18',
             'employment_type' => 'full_time', 'date_hired' => now()->subMonths(22),
+            'supervisor_id' => $emp004->id,
         ]);
 
         // --- Tier 3: Regular Employees (Employee role) ---
@@ -100,6 +104,7 @@ class EmployeeSeeder extends Seeder
             'alpeta_employee_id' => '2078', 'salary' => 38000,
             'gender' => 'male', 'date_of_birth' => '1993-04-05',
             'employment_type' => 'full_time', 'date_hired' => now()->subMonths(16),
+            'supervisor_id' => $emp005->id,
         ]);
 
         $this->createEmployee($company, $itDept, $posDeveloper, $employeeRole, [
@@ -107,6 +112,7 @@ class EmployeeSeeder extends Seeder
             'alpeta_employee_id' => '2080', 'salary' => 36000,
             'gender' => 'female', 'date_of_birth' => '1994-08-22',
             'employment_type' => 'full_time', 'date_hired' => now()->subMonths(14),
+            'supervisor_id' => $emp005->id,
         ]);
 
         $this->createEmployee($company, $itDept, $posDeveloper, $employeeRole, [
@@ -114,6 +120,7 @@ class EmployeeSeeder extends Seeder
             'alpeta_employee_id' => '2083', 'salary' => 37000,
             'gender' => 'male', 'date_of_birth' => '1992-12-01',
             'employment_type' => 'full_time', 'date_hired' => now()->subMonths(15),
+            'supervisor_id' => $emp005->id,
         ]);
 
         $this->createEmployee($company, $itDept, $posDeveloper, $employeeRole, [
@@ -121,6 +128,7 @@ class EmployeeSeeder extends Seeder
             'alpeta_employee_id' => '2084', 'salary' => 35000,
             'gender' => 'female', 'date_of_birth' => '1995-03-17',
             'employment_type' => 'full_time', 'date_hired' => now()->subMonths(10),
+            'supervisor_id' => $emp005->id,
         ]);
 
         // Under Ana Dela Cruz (EMP-006)
@@ -129,6 +137,7 @@ class EmployeeSeeder extends Seeder
             'alpeta_employee_id' => '2085', 'salary' => 36000,
             'gender' => 'male', 'date_of_birth' => '1991-10-11',
             'employment_type' => 'full_time', 'date_hired' => now()->subMonths(9),
+            'supervisor_id' => $emp006->id,
         ]);
 
         $this->createEmployee($company, $itDept, $posDeveloper, $employeeRole, [
@@ -136,6 +145,7 @@ class EmployeeSeeder extends Seeder
             'alpeta_employee_id' => '2086', 'salary' => 35000,
             'gender' => 'female', 'date_of_birth' => '1996-01-29',
             'employment_type' => 'probationary', 'date_hired' => now()->subMonths(4),
+            'supervisor_id' => $emp006->id,
         ]);
 
         $this->createEmployee($company, $itDept, $posDeveloper, $employeeRole, [
@@ -143,6 +153,7 @@ class EmployeeSeeder extends Seeder
             'alpeta_employee_id' => '2087', 'salary' => 34000,
             'gender' => 'male', 'date_of_birth' => '1993-07-07',
             'employment_type' => 'probationary', 'date_hired' => now()->subMonths(3),
+            'supervisor_id' => $emp006->id,
         ]);
 
         $this->createEmployee($company, $itDept, $posDeveloper, $employeeRole, [
@@ -150,6 +161,7 @@ class EmployeeSeeder extends Seeder
             'alpeta_employee_id' => '2091', 'salary' => 33000,
             'gender' => 'female', 'date_of_birth' => '1997-05-23',
             'employment_type' => 'probationary', 'date_hired' => now()->subMonths(2),
+            'supervisor_id' => $emp006->id,
         ]);
 
         // Under Pedro Ramos (EMP-007)
@@ -158,6 +170,7 @@ class EmployeeSeeder extends Seeder
             'alpeta_employee_id' => '2093', 'salary' => 30000,
             'gender' => 'male', 'date_of_birth' => '1990-02-14',
             'employment_type' => 'full_time', 'date_hired' => now()->subMonths(12),
+            'supervisor_id' => $emp007->id,
         ]);
 
         $this->createEmployee($company, $opsDept, $posOpsAssociate, $employeeRole, [
@@ -165,6 +178,7 @@ class EmployeeSeeder extends Seeder
             'alpeta_employee_id' => '2098', 'salary' => 29000,
             'gender' => 'female', 'date_of_birth' => '1994-11-03',
             'employment_type' => 'full_time', 'date_hired' => now()->subMonths(8),
+            'supervisor_id' => $emp007->id,
         ]);
 
         $this->createEmployee($company, $opsDept, $posOpsAssociate, $employeeRole, [
@@ -172,6 +186,7 @@ class EmployeeSeeder extends Seeder
             'alpeta_employee_id' => '2100', 'salary' => 28000,
             'gender' => 'male', 'date_of_birth' => '1992-08-19',
             'employment_type' => 'full_time', 'date_hired' => now()->subMonths(7),
+            'supervisor_id' => $emp007->id,
         ]);
 
         $this->createEmployee($company, $opsDept, $posOpsAssociate, $employeeRole, [
@@ -179,6 +194,7 @@ class EmployeeSeeder extends Seeder
             'alpeta_employee_id' => '2111', 'salary' => 27000,
             'gender' => 'female', 'date_of_birth' => '1995-04-08',
             'employment_type' => 'probationary', 'date_hired' => now()->subMonths(4),
+            'supervisor_id' => $emp007->id,
         ]);
 
         // Under Lorna Villanueva (EMP-008)
@@ -187,6 +203,7 @@ class EmployeeSeeder extends Seeder
             'alpeta_employee_id' => '2112', 'salary' => 26000,
             'gender' => 'male', 'date_of_birth' => '1993-06-26',
             'employment_type' => 'probationary', 'date_hired' => now()->subMonths(3),
+            'supervisor_id' => $emp008->id,
         ]);
 
         $this->createEmployee($company, $opsDept, $posOpsAssociate, $employeeRole, [
@@ -194,6 +211,7 @@ class EmployeeSeeder extends Seeder
             'alpeta_employee_id' => '2123', 'salary' => 25000,
             'gender' => 'female', 'date_of_birth' => '1996-09-15',
             'employment_type' => 'probationary', 'date_hired' => now()->subMonths(2),
+            'supervisor_id' => $emp008->id,
         ]);
 
         // --- Set department managers (after employees are created) ---
@@ -264,6 +282,7 @@ class EmployeeSeeder extends Seeder
             'salary_type' => 'monthly',
             'alpeta_employee_id' => $data['alpeta_employee_id'],
             'is_active' => true,
+            'supervisor_id' => $data['supervisor_id'] ?? null,
         ]);
 
         return $employee;

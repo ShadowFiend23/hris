@@ -10,10 +10,16 @@
     <div class="mb-6 border-b border-gray-200">
       <nav class="flex gap-6">
         <Link
+          href="/hr-settings/employee-settings"
+          class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
+        >
+          Employee Settings
+        </Link>
+        <Link
           href="/hr-settings/leave-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
-          Leave Types
+          Timekeeping Settings
         </Link>
         <Link
           href="/hr-settings/payroll"
@@ -25,13 +31,13 @@
           href="/hr-settings/allowance-types"
           class="border-b-2 border-blue-600 pb-3 text-sm font-medium text-blue-600"
         >
-          Allowance Types
+          Allowance Settings
         </Link>
         <Link
-          href="/hr-settings/shift-templates"
+          href="/hr-settings/loan-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
-          Shift Templates
+          Loan Settings
         </Link>
         <Link
           href="/hr-settings/holidays"
@@ -39,17 +45,11 @@
         >
           Holidays
         </Link>
-        <Link
-          href="/hr-settings/loan-types"
-          class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
-        >
-          Loan Types
-        </Link>
       </nav>
     </div>
 
     <!-- Tab header -->
-    <div class="mb-8 flex items-center justify-between">
+    <div class="mb-3 flex items-center justify-between">
       <div>
         <h2 class="text-xl font-semibold text-gray-900">Allowance Types</h2>
         <p class="mt-1 text-gray-600">Define the allowance types available for employees in your company.</p>
@@ -61,6 +61,10 @@
         <Plus :size="20" />
         Add Allowance Type
       </button>
+    </div>
+    <!-- Search -->
+    <div class="mb-4 flex justify-end">
+      <input v-model="allowanceSearch" type="text" placeholder="Search..." class="w-64 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
     </div>
 
     <!-- Flash message -->
@@ -159,7 +163,10 @@
           <tr v-if="props.allowanceTypes.length === 0">
             <td colspan="6" class="px-6 py-12 text-center text-gray-400">No allowance types configured yet.</td>
           </tr>
-          <tr v-for="at in props.allowanceTypes" :key="at.id" class="transition-colors hover:bg-gray-50">
+          <tr v-else-if="filteredAllowanceTypes.length === 0">
+            <td colspan="6" class="px-6 py-12 text-center text-gray-400">No allowance types match your search.</td>
+          </tr>
+          <tr v-for="at in paginatedAllowanceTypes" :key="at.id" class="transition-colors hover:bg-gray-50">
             <td class="px-6 py-4 font-medium text-gray-900">
               <span v-if="editingId !== at.id">{{ at.name }}</span>
               <input
@@ -226,6 +233,23 @@
           </tr>
         </tbody>
       </table>
+      <!-- Allowance Pagination -->
+      <div v-if="props.allowanceTypes.length > 0" class="flex items-center border-t border-gray-200 bg-white px-6 py-4">
+        <div class="flex w-1/3 items-center gap-2">
+          <span class="text-sm text-gray-600">Per page:</span>
+          <select v-model="allowancePerPage" @change="changeAllowancePerPage" class="rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option v-for="n in [5, 10, 25, 50]" :key="n" :value="n">{{ n }}</option>
+          </select>
+        </div>
+        <div class="flex w-1/3 justify-center gap-2">
+          <button @click="allowancePage--" :disabled="allowancePage <= 1" class="rounded-lg border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400" v-html="'&laquo;'" />
+          <button v-for="p in allowanceTotalPages" :key="p" @click="allowancePage = p" :class="['rounded-lg px-3 py-1 text-sm font-medium transition-colors', allowancePage === p ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50']">{{ p }}</button>
+          <button @click="allowancePage++" :disabled="allowancePage >= allowanceTotalPages" class="rounded-lg border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400" v-html="'&raquo;'" />
+        </div>
+        <div class="flex w-1/3 justify-end">
+          <p class="text-sm text-gray-600">{{ allowanceSearch ? `${filteredAllowanceTypes.length} of ${props.allowanceTypes.length}` : props.allowanceTypes.length }} allowance types</p>
+        </div>
+      </div>
     </div>
 
     <!-- Deactivate Confirm Modal -->
@@ -262,7 +286,7 @@
 
 <script setup lang="ts">
 import { AlertTriangle, CheckCircle, Pencil, Plus, Trash2, X } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Link, useForm, usePage } from '@inertiajs/vue3'
 import Layout from '@/components/Layout.vue'
 
@@ -281,6 +305,25 @@ const props = defineProps<{
 
 const page = usePage()
 const flashSuccess = computed(() => (page.props.flash as any)?.success ?? null)
+
+// Search & Pagination
+const allowanceSearch = ref('')
+const allowancePage = ref(1)
+const allowancePerPage = ref(5)
+const filteredAllowanceTypes = computed(() => {
+  const q = allowanceSearch.value.toLowerCase()
+  if (!q) { return props.allowanceTypes }
+  return props.allowanceTypes.filter(at =>
+    at.name.toLowerCase().includes(q) || at.code.toLowerCase().includes(q),
+  )
+})
+const allowanceTotalPages = computed(() => Math.max(1, Math.ceil(filteredAllowanceTypes.value.length / allowancePerPage.value)))
+const paginatedAllowanceTypes = computed(() => {
+  const start = (allowancePage.value - 1) * allowancePerPage.value
+  return filteredAllowanceTypes.value.slice(start, start + allowancePerPage.value)
+})
+const changeAllowancePerPage = () => { allowancePage.value = 1 }
+watch(allowanceSearch, () => { allowancePage.value = 1 })
 
 // Add form
 const showAddForm = ref(false)

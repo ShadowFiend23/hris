@@ -121,6 +121,14 @@ class AttendanceController extends Controller
             return response()->json(['error' => 'No employee profile found'], 404);
         }
 
+        if ($request->filled('employee_id')) {
+            $target = Employee::find($request->employee_id);
+            if (! $target || (int) $target->company_id !== (int) $employee->company_id) {
+                return response()->json(['error' => 'Unauthorized access'], 403);
+            }
+            $employee = $target;
+        }
+
         $filters = $request->only(['start_date', 'end_date', 'status', 'per_page']);
         $history = $this->attendanceService->getAttendanceHistory($employee, $filters);
 
@@ -135,12 +143,21 @@ class AttendanceController extends Controller
         $request->validate([
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
+            'employee_id' => 'nullable|exists:employees,id',
         ]);
 
         $employee = $request->user()->employee;
 
         if (! $employee) {
             return response()->json(['error' => 'No employee profile found'], 404);
+        }
+
+        if ($request->filled('employee_id')) {
+            $target = Employee::find($request->employee_id);
+            if (! $target || (int) $target->company_id !== (int) $employee->company_id) {
+                return response()->json(['error' => 'Unauthorized access'], 403);
+            }
+            $employee = $target;
         }
 
         $startDate = Carbon::parse($request->start_date);
@@ -156,21 +173,35 @@ class AttendanceController extends Controller
      */
     public function companyToday(Request $request): JsonResponse
     {
-        $companyId = $request->user()->employee?->company_id;
+        $companyId = $request->user()->company_id;
 
         if (! $companyId) {
             return response()->json(['error' => 'No company found'], 404);
         }
 
-        $attendance = $this->attendanceService->getCompanyAttendanceToday($companyId);
+        $date = $request->filled('date') ? $request->input('date') : now()->toDateString();
+
+        $attendance = $this->attendanceService->getCompanyAttendanceToday($companyId, $date);
+
+        $data = $attendance->map(fn ($record) => [
+            'employee_id' => $record->employee_id,
+            'employee_code' => $record->employee?->employee_id ?? '—',
+            'name' => trim(($record->employee?->first_name ?? '').' '.($record->employee?->last_name ?? '')),
+            'department' => $record->employee?->department?->name,
+            'position' => $record->employee?->position?->position_name,
+            'attendance_record_id' => $record->id,
+            'clock_in' => $record->clock_in,
+            'clock_out' => $record->clock_out,
+            'total_hours' => $record->total_hours,
+            'status' => $record->status,
+            'adjusted_by' => $record->adjusted_by,
+            'adjusted_at' => $record->adjusted_at,
+            'adjustment_reason' => $record->adjustment_reason,
+        ])->values();
 
         return response()->json([
-            'data' => $attendance,
-            'summary' => [
-                'total' => $attendance->count(),
-                'clocked_in' => $attendance->filter(fn ($a) => $a->clock_in && ! $a->clock_out)->count(),
-                'clocked_out' => $attendance->filter(fn ($a) => $a->clock_out)->count(),
-            ],
+            'data' => $data,
+            'date' => $date,
         ]);
     }
 

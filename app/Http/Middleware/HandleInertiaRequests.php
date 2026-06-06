@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Modules\Core\Models\Company;
 use App\Modules\Core\Models\Employee;
 use App\Modules\Core\Services\LicenseService;
 use Illuminate\Foundation\Inspiring;
@@ -44,9 +45,17 @@ class HandleInertiaRequests extends Middleware
         $moduleData = [];
         $licenseInfo = [];
 
+        $loansEnabled = true;
+        $leaveEnabled = true;
+        $otEnabled = true;
+
         if ($request->user() && $request->user()->company_id) {
             $companyId = $request->user()->company_id;
             $activeModuleCodes = $licenseService->getActiveModuleCodesForCompany($companyId);
+            $company = Company::find($companyId);
+            $loansEnabled = (bool) ($company?->loans_enabled ?? true);
+            $leaveEnabled = (bool) ($company?->leave_enabled ?? true);
+            $otEnabled = (bool) ($company?->ot_enabled ?? true);
 
             // Get all active modules from database
             $allModules = \App\Modules\Core\Models\Module::where('is_active', true)
@@ -93,6 +102,9 @@ class HandleInertiaRequests extends Middleware
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'modules' => $moduleData,
             'licenseInfo' => $licenseInfo,
+            'loansEnabled' => $loansEnabled,
+            'leaveEnabled' => $leaveEnabled,
+            'otEnabled' => $otEnabled,
         ];
     }
 }

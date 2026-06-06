@@ -294,13 +294,14 @@ const baseNavigationItems = [
   { label: 'Timekeeping', href: '/timekeeping', icon: Clock, moduleCode: 'timekeeping' },
   { label: 'Payroll', href: '/payroll', icon: PhilippinePeso, moduleCode: 'payroll' },
   { label: 'My Payslips', href: '/payroll/my-payslips', icon: FileText, moduleCode: 'payroll', employeeOnly: true },
-  { label: 'Loans', href: '/loans', icon: CreditCard, moduleCode: 'payroll', activeOn: ['/loans'] },
+  { label: 'Loans', href: '/loans', icon: CreditCard, moduleCode: 'payroll', activeOn: ['/loans'], loansOnly: true },
   { label: 'HR Settings', href: '/hr-settings/leave-types', icon: Settings, moduleCode: 'timekeeping', adminOnly: true, activeOn: ['/hr-settings'] },
   { label: 'Licenses', href: '/license/licenses', icon: Lock, moduleCode: null },
 ]
 
 const filteredNavigationItems = computed(() => {
   const modules = page.props.modules || []
+  const loansEnabled = (page.props as any).loansEnabled !== false
 
   // If no modules passed, default all to enabled (for pages that don't pass modules)
   if (modules.length === 0) {
@@ -309,6 +310,7 @@ const filteredNavigationItems = computed(() => {
         if (item.label === 'Licenses') return isAdmin.value
         if ((item as any).adminOnly) return isAdmin.value
         if ((item as any).employeeOnly) return isEmployee.value
+        if ((item as any).loansOnly && !loansEnabled) return false
         if (item.label === 'Employees' && isEmployee.value) return false
         if (item.label === 'Payroll' && isEmployee.value) return false
         return true
@@ -327,6 +329,11 @@ const filteredNavigationItems = computed(() => {
 
     // Admin-only items (HR Settings etc.)
     if ((item as any).adminOnly && !isAdmin.value) {
+      return { ...item, visible: false, enabled: false }
+    }
+
+    // Loans hidden when loans are disabled for the company
+    if ((item as any).loansOnly && !loansEnabled) {
       return { ...item, visible: false, enabled: false }
     }
 

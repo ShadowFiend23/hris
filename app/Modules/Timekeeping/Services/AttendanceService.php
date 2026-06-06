@@ -195,13 +195,13 @@ class AttendanceService
     }
 
     /**
-     * Get all employees' attendance for today
+     * Get all employees' attendance for a given date (defaults to today)
      */
-    public function getCompanyAttendanceToday(int $companyId): Collection
+    public function getCompanyAttendanceToday(int $companyId, ?string $date = null): Collection
     {
         return AttendanceRecord::forCompany($companyId)
-            ->forDate(now()->toDateString())
-            ->with(['employee', 'company'])
+            ->forDate($date ?? now()->toDateString())
+            ->with(['employee.department', 'employee.position'])
             ->get();
     }
 

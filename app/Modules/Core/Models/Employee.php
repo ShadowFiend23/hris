@@ -119,6 +119,25 @@ class Employee extends Model
         return $this->hasMany(Employee::class, 'supervisor_id');
     }
 
+    /**
+     * Recursively collect IDs of all employees in this manager's subtree
+     * (direct reports + their reports, etc.).
+     *
+     * @return array<int>
+     */
+    public function getAllSubordinateIds(): array
+    {
+        $this->loadMissing('subordinates');
+
+        $ids = [];
+        foreach ($this->subordinates as $subordinate) {
+            $ids[] = $subordinate->id;
+            array_push($ids, ...$subordinate->getAllSubordinateIds());
+        }
+
+        return $ids;
+    }
+
     // ==========================================
     // Timekeeping Relationships
     // ==========================================

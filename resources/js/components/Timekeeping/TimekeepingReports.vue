@@ -4,7 +4,7 @@
     <div class="bg-white rounded-lg border border-gray-200 p-6">
       <h3 class="text-lg font-semibold text-gray-900 mb-6">Generate Reports</h3>
 
-      <div :class="['grid grid-cols-1 gap-4 mb-4', isAdmin ? 'md:grid-cols-5' : 'md:grid-cols-4']">
+      <div :class="['grid grid-cols-1 gap-4 mb-4', isAdmin ? 'md:grid-cols-4' : 'md:grid-cols-3']">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
           <select v-model="reportFilters.type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
@@ -12,16 +12,6 @@
             <option value="overtime">Overtime Report</option>
             <option value="leave">Leave Report</option>
             <option value="summary">Summary Report</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Period</label>
-          <select v-model="reportFilters.period" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="yearly">Yearly</option>
           </select>
         </div>
 
@@ -103,8 +93,14 @@
       </div>
     </div>
 
+    <!-- Empty prompt for admin before first generate -->
+    <div v-if="!isLoading && activeReport === null" class="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
+      <p class="text-base font-medium text-gray-700 mb-1">No report generated yet</p>
+      <p class="text-sm">Select your filters above and click <span class="font-medium text-gray-800">Generate Report</span> to view results.</p>
+    </div>
+
     <!-- Loading State -->
-    <div v-if="isLoading" class="bg-white rounded-lg border border-gray-200 p-6">
+    <div v-else-if="isLoading" class="bg-white rounded-lg border border-gray-200 p-6">
       <div class="space-y-4">
         <div v-for="i in 5" :key="i" class="h-12 bg-gray-100 rounded animate-pulse" />
       </div>
@@ -137,10 +133,15 @@
         </div>
       </div>
 
-      <div class="overflow-x-auto">
+      <!-- Search -->
+      <div v-if="attendanceData.length > 0" class="mb-3 flex justify-end">
+        <input v-model="attendanceSearch" type="text" placeholder="Search by date or status..." class="w-64 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      <div class="overflow-x-auto rounded-lg border border-gray-200">
         <table class="w-full">
           <thead>
-            <tr class="border-b border-gray-200">
+            <tr class="border-b border-gray-200 bg-gray-50">
               <th class="text-left py-3 px-4 font-medium text-gray-900">Date</th>
               <th class="text-left py-3 px-4 font-medium text-gray-900">Clock In</th>
               <th class="text-left py-3 px-4 font-medium text-gray-900">Clock Out</th>
@@ -152,7 +153,10 @@
             <tr v-if="attendanceData.length === 0">
               <td colspan="5" class="py-8 text-center text-gray-500">No attendance records found</td>
             </tr>
-            <tr v-for="record in attendanceData" :key="record.id" class="border-b border-gray-200 hover:bg-gray-50">
+            <tr v-else-if="filteredAttendance.length === 0">
+              <td colspan="5" class="py-8 text-center text-gray-500">No records match your search.</td>
+            </tr>
+            <tr v-for="record in paginatedAttendance" :key="record.id" class="border-b border-gray-200 hover:bg-gray-50">
               <td class="py-3 px-4 text-gray-900">{{ formatDate(record.date) }}</td>
               <td class="py-3 px-4 text-gray-600">{{ formatTime(record.clock_in) }}</td>
               <td class="py-3 px-4 text-gray-600">{{ formatTime(record.clock_out) }}</td>
@@ -165,6 +169,23 @@
             </tr>
           </tbody>
         </table>
+        <!-- Attendance Pagination -->
+        <div v-if="attendanceData.length > 0" class="flex items-center border-t border-gray-200 bg-white px-6 py-4">
+          <div class="flex w-1/3 items-center gap-2">
+            <span class="text-sm text-gray-600">Per page:</span>
+            <select v-model="attendancePerPage" @change="changeAttendancePerPage" class="rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option v-for="n in [10, 25, 50]" :key="n" :value="n">{{ n }}</option>
+            </select>
+          </div>
+          <div class="flex w-1/3 justify-center gap-2">
+            <button @click="attendancePage--" :disabled="attendancePage <= 1" class="rounded-lg border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400" v-html="'&laquo;'" />
+            <button v-for="p in attendanceTotalPages" :key="p" @click="attendancePage = p" :class="['rounded-lg px-3 py-1 text-sm font-medium transition-colors', attendancePage === p ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50']">{{ p }}</button>
+            <button @click="attendancePage++" :disabled="attendancePage >= attendanceTotalPages" class="rounded-lg border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400" v-html="'&raquo;'" />
+          </div>
+          <div class="flex w-1/3 justify-end">
+            <p class="text-sm text-gray-600">{{ attendanceSearch ? `${filteredAttendance.length} of ${attendanceData.length}` : attendanceData.length }} records</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -191,10 +212,10 @@
         </div>
       </div>
 
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto rounded-lg border border-gray-200">
         <table class="w-full">
           <thead>
-            <tr class="border-b border-gray-200">
+            <tr class="border-b border-gray-200 bg-gray-50">
               <th class="text-left py-3 px-4 font-medium text-gray-900">Date</th>
               <th class="text-left py-3 px-4 font-medium text-gray-900">Hours</th>
               <th class="text-left py-3 px-4 font-medium text-gray-900">Type</th>
@@ -206,7 +227,7 @@
             <tr v-if="overtimeData.length === 0">
               <td colspan="5" class="py-8 text-center text-gray-500">No overtime records found</td>
             </tr>
-            <tr v-for="record in overtimeData" :key="record.id" class="border-b border-gray-200 hover:bg-gray-50">
+            <tr v-for="record in paginatedOvertime" :key="record.id" class="border-b border-gray-200 hover:bg-gray-50">
               <td class="py-3 px-4 text-gray-900">{{ formatDate(record.date) }}</td>
               <td class="py-3 px-4 text-gray-900 font-medium">{{ record.hours }}h</td>
               <td class="py-3 px-4 text-gray-600 capitalize">{{ record.overtime_type }}</td>
@@ -219,6 +240,23 @@
             </tr>
           </tbody>
         </table>
+        <!-- Overtime Pagination -->
+        <div v-if="overtimeData.length > 0" class="flex items-center border-t border-gray-200 bg-white px-6 py-4">
+          <div class="flex w-1/3 items-center gap-2">
+            <span class="text-sm text-gray-600">Per page:</span>
+            <select v-model="overtimePerPage" @change="changeOvertimePerPage" class="rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option v-for="n in [10, 25, 50]" :key="n" :value="n">{{ n }}</option>
+            </select>
+          </div>
+          <div class="flex w-1/3 justify-center gap-2">
+            <button @click="overtimePage--" :disabled="overtimePage <= 1" class="rounded-lg border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400" v-html="'&laquo;'" />
+            <button v-for="p in overtimeTotalPages" :key="p" @click="overtimePage = p" :class="['rounded-lg px-3 py-1 text-sm font-medium transition-colors', overtimePage === p ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50']">{{ p }}</button>
+            <button @click="overtimePage++" :disabled="overtimePage >= overtimeTotalPages" class="rounded-lg border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400" v-html="'&raquo;'" />
+          </div>
+          <div class="flex w-1/3 justify-end">
+            <p class="text-sm text-gray-600">{{ overtimeData.length }} total records</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -249,10 +287,10 @@
         </div>
       </div>
 
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto rounded-lg border border-gray-200">
         <table class="w-full">
           <thead>
-            <tr class="border-b border-gray-200">
+            <tr class="border-b border-gray-200 bg-gray-50">
               <th class="text-left py-3 px-4 font-medium text-gray-900">Type</th>
               <th class="text-left py-3 px-4 font-medium text-gray-900">Allocated</th>
               <th class="text-left py-3 px-4 font-medium text-gray-900">Used</th>
@@ -263,7 +301,7 @@
             <tr v-if="leaveData.length === 0">
               <td colspan="4" class="py-8 text-center text-gray-500">No leave balance data found</td>
             </tr>
-            <tr v-for="leave in leaveData" :key="leave.id" class="border-b border-gray-200 hover:bg-gray-50">
+            <tr v-for="leave in paginatedLeave" :key="leave.id" class="border-b border-gray-200 hover:bg-gray-50">
               <td class="py-3 px-4 text-gray-900 font-medium">{{ leave.leave_type?.name || 'Leave' }}</td>
               <td class="py-3 px-4 text-gray-600">{{ leave.total_days }}</td>
               <td class="py-3 px-4 text-gray-600">{{ leave.used_days }}</td>
@@ -271,6 +309,23 @@
             </tr>
           </tbody>
         </table>
+        <!-- Leave Pagination -->
+        <div v-if="leaveData.length > 0" class="flex items-center border-t border-gray-200 bg-white px-6 py-4">
+          <div class="flex w-1/3 items-center gap-2">
+            <span class="text-sm text-gray-600">Per page:</span>
+            <select v-model="leavePerPage" @change="changeLeavePerPage" class="rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option v-for="n in [10, 25, 50]" :key="n" :value="n">{{ n }}</option>
+            </select>
+          </div>
+          <div class="flex w-1/3 justify-center gap-2">
+            <button @click="leavePage--" :disabled="leavePage <= 1" class="rounded-lg border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400" v-html="'&laquo;'" />
+            <button v-for="p in leaveTotalPages" :key="p" @click="leavePage = p" :class="['rounded-lg px-3 py-1 text-sm font-medium transition-colors', leavePage === p ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50']">{{ p }}</button>
+            <button @click="leavePage++" :disabled="leavePage >= leaveTotalPages" class="rounded-lg border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400" v-html="'&raquo;'" />
+          </div>
+          <div class="flex w-1/3 justify-end">
+            <p class="text-sm text-gray-600">{{ leaveData.length }} total records</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -294,7 +349,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { Link } from '@inertiajs/vue3'
 import { Download, FileText, Loader2, Search, X } from 'lucide-vue-next'
@@ -376,12 +431,11 @@ const {
   fetchMySummary,
 } = useTimekeeping()
 
-const activeReport = ref('attendance')
+const activeReport = ref<string | null>(isAdmin ? null : 'attendance')
 const isLoading = ref(false)
 
 const reportFilters = ref({
   type: 'attendance',
-  period: 'monthly',
   startDate: getDefaultStartDate(),
   endDate: getDefaultEndDate()
 })
@@ -411,6 +465,48 @@ const leaveSummary = ref({
   totalRemaining: 0,
   approvalRate: 100
 })
+
+// Pagination — Attendance
+const attendanceSearch = ref('')
+const attendancePage = ref(1)
+const attendancePerPage = ref(10)
+const filteredAttendance = computed(() => {
+  const q = attendanceSearch.value.toLowerCase()
+  if (!q) { return attendanceData.value }
+  return attendanceData.value.filter(r =>
+    formatDate(r.date).toLowerCase().includes(q) || r.status.toLowerCase().includes(q),
+  )
+})
+const attendanceTotalPages = computed(() => Math.max(1, Math.ceil(filteredAttendance.value.length / attendancePerPage.value)))
+const paginatedAttendance = computed(() => {
+  const start = (attendancePage.value - 1) * attendancePerPage.value
+  return filteredAttendance.value.slice(start, start + attendancePerPage.value)
+})
+function changeAttendancePerPage(): void { attendancePage.value = 1 }
+watch(attendanceData, () => { attendancePage.value = 1; attendanceSearch.value = '' })
+watch(attendanceSearch, () => { attendancePage.value = 1 })
+
+// Pagination — Overtime
+const overtimePage = ref(1)
+const overtimePerPage = ref(10)
+const overtimeTotalPages = computed(() => Math.max(1, Math.ceil(overtimeData.value.length / overtimePerPage.value)))
+const paginatedOvertime = computed(() => {
+  const start = (overtimePage.value - 1) * overtimePerPage.value
+  return overtimeData.value.slice(start, start + overtimePerPage.value)
+})
+function changeOvertimePerPage(): void { overtimePage.value = 1 }
+watch(overtimeData, () => { overtimePage.value = 1 })
+
+// Pagination — Leave
+const leavePage = ref(1)
+const leavePerPage = ref(10)
+const leaveTotalPages = computed(() => Math.max(1, Math.ceil(leaveData.value.length / leavePerPage.value)))
+const paginatedLeave = computed(() => {
+  const start = (leavePage.value - 1) * leavePerPage.value
+  return leaveData.value.slice(start, start + leavePerPage.value)
+})
+function changeLeavePerPage(): void { leavePage.value = 1 }
+watch(leaveData, () => { leavePage.value = 1 })
 
 // Helper functions
 function getDefaultStartDate(): string {
@@ -467,18 +563,19 @@ const generateReport = async () => {
 
   try {
     const { startDate, endDate } = reportFilters.value
+    const employeeFilter = selectedEmployee.value ? { employee_id: selectedEmployee.value.id } : {}
 
     if (reportFilters.value.type === 'attendance') {
       const [historyResponse, summaryResponse] = await Promise.all([
-        fetchAttendanceHistory({ start_date: startDate, end_date: endDate, per_page: 50 }),
-        fetchAttendanceSummary(startDate, endDate)
+        fetchAttendanceHistory({ start_date: startDate, end_date: endDate, per_page: 50, ...employeeFilter }),
+        fetchAttendanceSummary(startDate, endDate, employeeFilter)
       ])
       attendanceData.value = historyResponse.data || []
       if (summaryResponse.data) {
         attendanceSummary.value = {
-          daysPresent: summaryResponse.data.days_present || 0,
-          daysLate: summaryResponse.data.days_late || 0,
-          daysAbsent: summaryResponse.data.days_absent || 0,
+          daysPresent: summaryResponse.data.present_days || 0,
+          daysLate: summaryResponse.data.late_days || 0,
+          daysAbsent: summaryResponse.data.absent_days || 0,
           totalHours: summaryResponse.data.total_hours || 0,
           attendanceRate: summaryResponse.data.attendance_rate || 0
         }
@@ -512,9 +609,10 @@ const downloadReport = () => {
   alert('Report download feature coming soon')
 }
 
-// Initialize with attendance report
 onMounted(async () => {
-  await generateReport()
+  if (!isAdmin) {
+    await generateReport()
+  }
   document.addEventListener('click', (e) => {
     if (autocompleteWrap.value && !autocompleteWrap.value.contains(e.target as Node)) {
       showSuggestions.value = false

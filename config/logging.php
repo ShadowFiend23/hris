@@ -127,6 +127,13 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'alpeta_sync' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/alpetaSync.log'),
+            'level' => 'debug',
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];

@@ -4,17 +4,28 @@ namespace App\Modules\Payroll\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Payroll\LoanRequest;
+use App\Modules\Core\Models\Company;
 use App\Modules\Payroll\Models\Loan;
 use App\Modules\Payroll\Models\LoanType;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class LoanController extends Controller
 {
-    public function index(): Response
+    private function requireLoansEnabled(Request $request): void
     {
+        $companyId = $request->user()->company_id;
+        $loansEnabled = (bool) Company::where('id', $companyId)->value('loans_enabled');
+
+        abort_if(! $loansEnabled, 403, 'Loans are disabled for this company.');
+    }
+
+    public function index(Request $request): Response
+    {
+        $this->requireLoansEnabled($request);
         $this->authorize('viewLoans', Loan::class);
 
         $user = Auth::user();
@@ -72,6 +83,8 @@ class LoanController extends Controller
 
     public function store(LoanRequest $request): RedirectResponse
     {
+        $this->requireLoansEnabled($request);
+
         $companyId = $request->user()->employee?->company_id;
 
         $data = $request->validated();
@@ -87,6 +100,7 @@ class LoanController extends Controller
 
     public function update(LoanRequest $request, Loan $loan): RedirectResponse
     {
+        $this->requireLoansEnabled($request);
         $this->authorize('update', $loan);
 
         $loan->update($request->validated());
@@ -94,8 +108,9 @@ class LoanController extends Controller
         return redirect()->back()->with('success', 'Loan updated successfully.');
     }
 
-    public function destroy(Loan $loan): RedirectResponse
+    public function destroy(Request $request, Loan $loan): RedirectResponse
     {
+        $this->requireLoansEnabled($request);
         $this->authorize('delete', $loan);
 
         $loan->delete();

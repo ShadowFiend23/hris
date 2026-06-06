@@ -1,6 +1,15 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(php artisan *)",
+      "Bash(vendor/bin/pint --dirty)",
+      "Bash(vendor/bin/pint --dirty app/Jobs/SyncAlpetaLogsJob.php config/logging.php)",
+      "Bash(Get-Content storage/logs/alpetaSync.log)",
+      "Bash(vendor/bin/pint --dirty app/Modules/Core/Controllers/EmployeesController.php)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "laravel-boost"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }

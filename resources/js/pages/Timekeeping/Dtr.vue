@@ -1,6 +1,12 @@
 <template>
   <Layout>
     <div class="w-full">
+      <div class="mb-6">
+        <Link href="/timekeeping" class="mb-3 inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
+          <ChevronLeft :size="16" />
+          Back to Timekeeping
+        </Link>
+      </div>
       <div class="mb-6 flex items-center justify-between">
         <div>
           <h1 class="text-3xl font-bold text-gray-900">Daily Time Record</h1>
@@ -27,18 +33,53 @@
       <!-- Controls -->
       <div class="bg-white rounded-lg border border-gray-200 p-4 mb-6">
         <div class="flex flex-wrap items-end gap-4">
-          <!-- Employee selector (for managers/admins) -->
-          <div v-if="props.employees.length > 1">
+          <!-- Employee autocomplete -->
+          <div v-if="props.employees.length > 1" class="relative" ref="autocompleteWrap">
             <label class="block text-sm font-medium text-gray-700 mb-1">Employee</label>
-            <select
-              v-model="selectedEmployeeId"
-              class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              @change="fetchDtrData"
+            <div class="relative">
+              <input
+                v-model="employeeQuery"
+                type="text"
+                placeholder="Name or ID…"
+                autocomplete="off"
+                class="w-64 px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none"
+                @input="onEmployeeInput"
+                @focus="showSuggestions = suggestions.length > 0"
+                @keydown.escape="showSuggestions = false"
+                @keydown.down.prevent="highlightNext"
+                @keydown.up.prevent="highlightPrev"
+                @keydown.enter.prevent="selectHighlighted"
+              />
+              <button v-if="selectedEmployeeId !== props.myEmployeeId || employeeQuery" @click="clearEmployee" type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X :size="14" />
+              </button>
+              <Search v-else :size="14" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            </div>
+
+            <div v-if="suggestionsLoading" class="absolute z-20 mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-400 shadow-lg">
+              Searching…
+            </div>
+            <ul
+              v-else-if="showSuggestions && suggestions.length > 0"
+              class="absolute z-20 mt-1 w-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg"
+              style="max-height: 220px"
             >
-              <option v-for="emp in props.employees" :key="emp.id" :value="emp.id">
-                {{ emp.name }}
-              </option>
-            </select>
+              <li
+                v-for="(emp, idx) in suggestions"
+                :key="emp.id"
+                @mousedown.prevent="selectEmployee(emp)"
+                :class="['cursor-pointer px-3 py-2 text-sm', idx === highlightedIndex ? 'bg-blue-50 text-blue-700' : 'text-gray-800 hover:bg-gray-50']"
+              >
+                <span class="font-medium">{{ emp.last_name }},</span> {{ emp.first_name }}
+                <span class="ml-1 text-xs text-gray-400">{{ emp.employee_id }}</span>
+              </li>
+            </ul>
+            <div
+              v-else-if="showSuggestions && employeeQuery.length >= 2"
+              class="absolute z-20 mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-500 shadow-lg"
+            >
+              No employees found
+            </div>
           </div>
 
           <div>
@@ -89,7 +130,7 @@
           <div class="flex items-end gap-2">
             <span class="text-gray-500 shrink-0">Name:</span>
             <span class="border-b border-gray-800 flex-1 font-semibold uppercase">
-              {{ selectedEmployee?.name ?? '' }}
+              {{ selectedEmployeeName }}
             </span>
           </div>
           <div class="grid grid-cols-2 gap-6">
@@ -129,7 +170,9 @@
             </thead>
             <tbody>
               <tr v-for="row in dtrData.rows" :key="row.day" class="hover:bg-gray-50">
-                <td class="border border-gray-300 px-3 py-1 text-center font-semibold text-gray-800">{{ row.day }}</td>
+                <td class="border border-gray-300 px-3 py-1 text-center font-semibold text-gray-800">
+                  {{ row.day }} <span class="text-xs font-normal text-gray-500">({{ getDayAbbr(row.day) }})</span>
+                </td>
                 <td class="border border-gray-300 px-3 py-1 text-center text-gray-700">{{ row.morning_arrival }}</td>
                 <td class="border border-gray-300 px-3 py-1 text-center text-gray-700">{{ row.morning_departure }}</td>
                 <td class="border border-gray-300 px-3 py-1 text-center text-gray-700">{{ row.afternoon_arrival }}</td>
@@ -163,7 +206,7 @@
           <div class="grid grid-cols-2 gap-12 mt-8">
             <div>
               <div class="border-t border-gray-800 pt-1 text-center text-xs font-semibold uppercase">
-                {{ selectedEmployee?.name ?? '' }}
+                {{ selectedEmployeeName }}
               </div>
               <div class="text-center text-xs text-gray-500 mt-1">Employee's Signature</div>
             </div>
@@ -183,12 +226,20 @@
 
 <script setup lang="ts">
 import Layout from '@/components/Layout.vue'
-import { Download, Printer } from 'lucide-vue-next'
+import { Link } from '@inertiajs/vue3'
+import { ChevronLeft, Download, Printer, Search, X } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 
 interface EmployeeOption {
   id: number
   name: string
+}
+
+interface EmployeeSuggestion {
+  id: number
+  employee_id: string
+  first_name: string
+  last_name: string
 }
 
 interface DtrRow {
@@ -218,6 +269,7 @@ const props = defineProps<{
 }>()
 
 const selectedEmployeeId = ref<number>(props.myEmployeeId)
+const selectedEmployeeName = ref<string>(props.employees.find((e) => e.id === props.myEmployeeId)?.name ?? '')
 const selectedYear = ref<number>(props.currentYear)
 const selectedMonth = ref<number>(props.currentMonth)
 
@@ -225,7 +277,71 @@ const dtrData = ref<DtrData | null>(null)
 const isLoading = ref(false)
 const loadError = ref<string | null>(null)
 
-const selectedEmployee = computed(() => props.employees.find((e) => e.id === selectedEmployeeId.value))
+// Employee autocomplete
+const employeeQuery = ref(selectedEmployeeName.value)
+const suggestions = ref<EmployeeSuggestion[]>([])
+const showSuggestions = ref(false)
+const suggestionsLoading = ref(false)
+const highlightedIndex = ref(-1)
+const autocompleteWrap = ref<HTMLElement | null>(null)
+let debounceTimer: ReturnType<typeof setTimeout>
+
+const onEmployeeInput = () => {
+  clearTimeout(debounceTimer)
+  if (employeeQuery.value.length < 2) {
+    suggestions.value = []
+    showSuggestions.value = false
+    return
+  }
+  suggestionsLoading.value = true
+  showSuggestions.value = true
+  debounceTimer = setTimeout(fetchSuggestions, 280)
+}
+
+const fetchSuggestions = async () => {
+  try {
+    const res = await fetch(`/api/core/employees?search=${encodeURIComponent(employeeQuery.value)}&is_active=1`, {
+      headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin',
+    })
+    if (!res.ok) { return }
+    const json = await res.json()
+    const list: any[] = json.data ?? json
+    suggestions.value = list
+      .map((e: any) => ({ id: e.id, employee_id: e.employee_id, first_name: e.first_name, last_name: e.last_name }))
+      .sort((a, b) => a.last_name.localeCompare(b.last_name))
+      .slice(0, 8)
+    highlightedIndex.value = -1
+  } finally {
+    suggestionsLoading.value = false
+  }
+}
+
+const selectEmployee = (emp: EmployeeSuggestion) => {
+  selectedEmployeeId.value = emp.id
+  selectedEmployeeName.value = `${emp.last_name}, ${emp.first_name}`
+  employeeQuery.value = selectedEmployeeName.value
+  showSuggestions.value = false
+  suggestions.value = []
+  fetchDtrData()
+}
+
+const clearEmployee = () => {
+  selectedEmployeeId.value = props.myEmployeeId
+  selectedEmployeeName.value = props.employees.find((e) => e.id === props.myEmployeeId)?.name ?? ''
+  employeeQuery.value = ''
+  suggestions.value = []
+  showSuggestions.value = false
+  fetchDtrData()
+}
+
+const highlightNext = () => { if (highlightedIndex.value < suggestions.value.length - 1) { highlightedIndex.value++ } }
+const highlightPrev = () => { if (highlightedIndex.value > 0) { highlightedIndex.value-- } }
+const selectHighlighted = () => {
+  if (highlightedIndex.value >= 0 && suggestions.value[highlightedIndex.value]) {
+    selectEmployee(suggestions.value[highlightedIndex.value])
+  }
+}
 
 const months = [
   { value: 1, label: 'January' }, { value: 2, label: 'February' }, { value: 3, label: 'March' },
@@ -278,12 +394,22 @@ async function fetchDtrData(): Promise<void> {
   }
 }
 
+function getDayAbbr(day: number): string {
+  const date = new Date(selectedYear.value, selectedMonth.value - 1, day)
+  return date.toLocaleDateString('en-US', { weekday: 'short' })
+}
+
 function printDtr(): void {
   window.print()
 }
 
 onMounted(() => {
   fetchDtrData()
+  document.addEventListener('click', (e) => {
+    if (autocompleteWrap.value && !autocompleteWrap.value.contains(e.target as Node)) {
+      showSuggestions.value = false
+    }
+  })
 })
 </script>
 

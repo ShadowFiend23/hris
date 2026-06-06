@@ -34,6 +34,7 @@
         </div>
         <div class="flex items-center gap-3">
           <Link
+            v-if="canEdit"
             :href="`/employees/${employee.id}/edit`"
             class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
           >
@@ -41,6 +42,7 @@
             Edit
           </Link>
           <button
+            v-if="canDelete"
             @click="showDeleteModal = true"
             class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
           >
@@ -790,6 +792,8 @@ interface AllowanceTypeOption {
 interface Props {
   employee: Employee
   payroll_items: PayrollItem[]
+  canEdit: boolean
+  canDelete: boolean
 }
 
 const props = defineProps<Props>()

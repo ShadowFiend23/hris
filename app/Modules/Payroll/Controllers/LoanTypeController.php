@@ -4,6 +4,7 @@ namespace App\Modules\Payroll\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Payroll\LoanTypeRequest;
+use App\Modules\Core\Models\Company;
 use App\Modules\Payroll\Models\LoanType;
 use App\Modules\Payroll\Models\PayrollSetting;
 use Illuminate\Http\JsonResponse;
@@ -19,6 +20,7 @@ class LoanTypeController extends Controller
         $this->authorize('viewAnySettings', PayrollSetting::class);
 
         $companyId = $request->user()->company_id;
+        $company = Company::findOrFail($companyId);
 
         $loanTypes = LoanType::where(function ($q) use ($companyId): void {
             $q->whereNull('company_id')->orWhere('company_id', $companyId);
@@ -29,7 +31,21 @@ class LoanTypeController extends Controller
 
         return Inertia::render('HRSettings/LoanTypes', [
             'loanTypes' => $loanTypes,
+            'loansEnabled' => $company->loans_enabled,
         ]);
+    }
+
+    public function toggleLoans(Request $request): RedirectResponse
+    {
+        $this->authorize('viewAnySettings', PayrollSetting::class);
+
+        $company = Company::findOrFail($request->user()->company_id);
+        $company->update(['loans_enabled' => ! $company->loans_enabled]);
+
+        $status = $company->loans_enabled ? 'enabled' : 'disabled';
+
+        return redirect()->route('hr-settings.loan-types.index')
+            ->with('success', "Loans have been {$status} for your company.");
     }
 
     public function apiIndex(Request $request): JsonResponse

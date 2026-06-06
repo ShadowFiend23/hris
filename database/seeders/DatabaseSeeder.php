@@ -191,11 +191,18 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
+        // Seed departments and positions with hierarchy
+        $this->call(DepartmentSeeder::class);
+        $this->call(PositionSeeder::class);
+
         // Call TimekeepingSeeder to create leave types, shift templates, etc.
         $this->call(TimekeepingSeeder::class);
 
         // Seed 20 employees with Alpeta IDs and org hierarchy
         $this->call(EmployeeSeeder::class);
+
+        // Seed attendance records across all shift types (including night shift)
+        $this->call(AttendanceSeeder::class);
 
         // Seed Philippine national holidays
         $this->call(PHHolidaySeeder::class);

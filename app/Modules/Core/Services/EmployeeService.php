@@ -64,6 +64,11 @@ class EmployeeService
             $query->where('is_active', $filters['is_active']);
         }
 
+        // Restrict to an explicit set of employee IDs (used to scope manager visibility to their subtree)
+        if (! empty($filters['employee_ids'])) {
+            $query->whereIn('id', $filters['employee_ids']);
+        }
+
         // Search by name, employee_id, or email
         if (! empty($filters['search'])) {
             $search = $filters['search'];

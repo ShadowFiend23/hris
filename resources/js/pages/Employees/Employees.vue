@@ -208,11 +208,15 @@
                         <Eye :size="16" />
                         <span>View Details</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem @click="router.visit(`/employees/${employee.id}/edit`)">
+                      <DropdownMenuItem
+                        v-if="canEdit"
+                        @click="router.visit(`/employees/${employee.id}/edit`)"
+                      >
                         <Pencil :size="16" />
                         <span>Edit</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
+                        v-if="canDelete"
                         class="text-red-600 focus:text-red-600 focus:bg-red-50"
                         @click="confirmDelete(employee)"
                       >
@@ -380,6 +384,8 @@ interface Props {
     sort_direction: string
   }
   employmentStatuses: Array<{ value: string; label: string }>
+  canEdit: boolean
+  canDelete: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -388,6 +394,8 @@ const props = withDefaults(defineProps<Props>(), {
   positions: () => [],
   filters: () => ({ search: null, department_id: null, position_id: null, employment_status: null, sort_by: 'created_at', sort_direction: 'desc' }),
   employmentStatuses: () => [],
+  canEdit: false,
+  canDelete: false,
 })
 
 // State

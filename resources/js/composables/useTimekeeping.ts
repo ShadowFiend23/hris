@@ -262,8 +262,8 @@ export function useTimekeeping() {
         return response.json();
     };
 
-    const fetchAttendanceSummary = async (startDate: string, endDate: string) => {
-        const params = new URLSearchParams({ start_date: startDate, end_date: endDate });
+    const fetchAttendanceSummary = async (startDate: string, endDate: string, extra: Record<string, any> = {}) => {
+        const params = new URLSearchParams({ start_date: startDate, end_date: endDate, ...extra });
         const response = await fetch(`/api/timekeeping/attendance/summary?${params}`, {
             headers: {
                 'Accept': 'application/json',

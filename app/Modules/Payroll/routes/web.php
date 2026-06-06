@@ -64,6 +64,7 @@ Route::middleware(['auth', 'module.access:payroll'])->group(function (): void {
         Route::post('/loan-types', [LoanTypeController::class, 'store'])->name('loan-types.store');
         Route::put('/loan-types/{loanType}', [LoanTypeController::class, 'update'])->name('loan-types.update');
         Route::delete('/loan-types/{loanType}', [LoanTypeController::class, 'destroy'])->name('loan-types.destroy');
+        Route::patch('/loan-settings/toggle', [LoanTypeController::class, 'toggleLoans'])->name('loan-settings.toggle');
     });
 
     // JSON API for type dropdowns

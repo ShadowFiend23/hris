@@ -13,7 +13,7 @@
           href="/hr-settings/leave-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
-          Leave Types
+          Timekeeping Settings
         </Link>
         <Link
           href="/hr-settings/payroll"
@@ -25,7 +25,7 @@
           href="/hr-settings/allowance-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
-          Allowance Types
+          Allowance Settings
         </Link>
         <Link
           href="/hr-settings/shift-templates"
@@ -43,7 +43,7 @@
           href="/hr-settings/loan-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
-          Loan Types
+          Loan Settings
         </Link>
       </nav>
     </div>
@@ -277,6 +277,11 @@ import Layout from '@/components/Layout.vue'
 import { Link, useForm, usePage } from '@inertiajs/vue3'
 import { CheckCircle, Pencil, Plus, Trash2, X } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
+import {
+  store as shiftStore,
+  update as shiftUpdate,
+  destroy as shiftDestroy,
+} from '@/actions/App/Modules/Timekeeping/Controllers/ShiftTemplatesController'
 
 interface ShiftTemplate {
   id: number
@@ -320,7 +325,7 @@ function cancelAdd(): void {
 }
 
 function submitAdd(): void {
-  addForm.post(route('hr-settings.shift-templates.store'), {
+  addForm.post(shiftStore.url(), {
     onSuccess: () => {
       showAddForm.value = false
       addForm.reset()
@@ -357,7 +362,7 @@ function cancelEdit(): void {
 }
 
 function submitEdit(id: number): void {
-  editForm.put(route('hr-settings.shift-templates.update', id), {
+  editForm.put(shiftUpdate.url(id), {
     onSuccess: () => {
       editingId.value = null
     },
@@ -374,7 +379,7 @@ function confirmDeactivate(st: ShiftTemplate): void {
 
 function submitDeactivate(): void {
   if (!deactivatingTemplate.value) return
-  destroyForm.delete(route('hr-settings.shift-templates.destroy', deactivatingTemplate.value.id), {
+  destroyForm.delete(shiftDestroy.url(deactivatingTemplate.value.id), {
     onSuccess: () => {
       deactivatingTemplate.value = null
     },

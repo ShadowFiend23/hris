@@ -2,6 +2,7 @@
 
 namespace App\Modules\Payroll\Services;
 
+use App\Modules\Core\Models\Company;
 use App\Modules\Core\Models\Employee;
 use App\Modules\Payroll\Models\EmployeeAllowance;
 use App\Modules\Payroll\Models\Loan;
@@ -234,28 +235,33 @@ class PayrollCalculationService
             }
         }
 
-        // Loan amortizations
-        $activeLoans = Loan::where('employee_id', $employee->id)
-            ->where('status', 'active')
-            ->get();
+        // Loan amortizations — only when loans are enabled for the company
+        $loansEnabled = (bool) Company::where('id', $employee->company_id)->value('loans_enabled');
+        $activeLoans = collect();
 
-        foreach ($activeLoans as $loan) {
-            // Deduct monthly amortization on last cutoff of month (or each period for monthly)
-            if ($isLastCutoffOfMonth) {
-                $amortization = min((float) $loan->monthly_amortization, (float) $loan->balance);
+        if ($loansEnabled) {
+            $activeLoans = Loan::where('employee_id', $employee->id)
+                ->where('status', 'active')
+                ->get();
 
-                if ($amortization > 0) {
-                    $loanType = match ($loan->type) {
-                        'sss_loan' => 'sss_loan',
-                        'pagibig_loan' => 'pagibig_loan',
-                        default => 'company_loan',
-                    };
+            foreach ($activeLoans as $loan) {
+                // Deduct monthly amortization on last cutoff of month (or each period for monthly)
+                if ($isLastCutoffOfMonth) {
+                    $amortization = min((float) $loan->monthly_amortization, (float) $loan->balance);
 
-                    $deductions[] = [
-                        'type' => $loanType,
-                        'amount' => round($amortization, 2),
-                        'description' => ucfirst(str_replace('_', ' ', $loan->type)).' amortization',
-                    ];
+                    if ($amortization > 0) {
+                        $loanType = match ($loan->type) {
+                            'sss_loan' => 'sss_loan',
+                            'pagibig_loan' => 'pagibig_loan',
+                            default => 'company_loan',
+                        };
+
+                        $deductions[] = [
+                            'type' => $loanType,
+                            'amount' => round($amortization, 2),
+                            'description' => ucfirst(str_replace('_', ' ', $loan->type)).' amortization',
+                        ];
+                    }
                 }
             }
         }

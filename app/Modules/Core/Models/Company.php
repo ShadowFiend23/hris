@@ -37,12 +37,18 @@ class Company extends Model
         'industry',
         'employee_count',
         'is_active',
+        'loans_enabled',
+        'leave_enabled',
+        'ot_enabled',
     ];
 
     protected function casts(): array
     {
         return [
             'is_active' => 'boolean',
+            'loans_enabled' => 'boolean',
+            'leave_enabled' => 'boolean',
+            'ot_enabled' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
@@ -75,6 +81,7 @@ class Company extends Model
     public function getActiveLicense(): ?License
     {
         $licenseService = app(LicenseService::class);
+
         return $licenseService->getCompanyActiveLicense($this->id);
     }
 
@@ -84,6 +91,7 @@ class Company extends Model
     public function hasModuleAccess(string $moduleCode): bool
     {
         $licenseService = app(LicenseService::class);
+
         return $licenseService->hasModuleAccess($this->id, $moduleCode);
     }
 }

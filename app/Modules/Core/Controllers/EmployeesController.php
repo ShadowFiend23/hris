@@ -58,11 +58,11 @@ class EmployeesController extends Controller
 
         $perPage = max(5, min(100, (int) $request->input('per_page', 5)));
 
-        // Managers see only their department's employees
+        // Managers see only employees within their reporting subtree
         if ($user->hasRole('manager') && ! $user->hasRole('admin')) {
             $managerEmployee = Employee::where('user_id', $user->id)->first();
             if ($managerEmployee) {
-                $filters['department_id'] = $filters['department_id'] ?: $managerEmployee->department_id;
+                $filters['employee_ids'] = $managerEmployee->getAllSubordinateIds();
             }
         }
 
@@ -90,6 +90,8 @@ class EmployeesController extends Controller
             'positions' => $positions,
             'filters' => $filters,
             'employmentStatuses' => $this->getEmploymentStatuses(),
+            'canEdit' => $user->hasPermission('hris.employees.edit'),
+            'canDelete' => $user->hasPermission('hris.employees.delete'),
         ]);
     }
 
@@ -166,6 +168,8 @@ class EmployeesController extends Controller
         return Inertia::render('Employees/EmployeeDetail', [
             'employee' => $employee,
             'payroll_items' => $payrollItems,
+            'canEdit' => Auth::user()->hasPermission('hris.employees.edit'),
+            'canDelete' => Auth::user()->hasPermission('hris.employees.delete'),
         ]);
     }
 
@@ -174,8 +178,7 @@ class EmployeesController extends Controller
      */
     public function edit(Employee $employee): Response
     {
-        // Authorize: ensure employee belongs to user's company
-        $this->authorizeEmployee($employee);
+        $this->authorize('update', $employee);
 
         $companyId = $this->getCompanyId();
 
@@ -206,8 +209,7 @@ class EmployeesController extends Controller
      */
     public function update(UpdateEmployeeRequest $request, Employee $employee): RedirectResponse
     {
-        // Authorize: ensure employee belongs to user's company
-        $this->authorizeEmployee($employee);
+        $this->authorize('update', $employee);
 
         $data = $request->validated();
 
@@ -294,12 +296,25 @@ class EmployeesController extends Controller
     }
 
     /**
-     * Authorize that the employee belongs to the current user's company.
+     * Authorize that the employee belongs to the current user's company,
+     * and that managers can only access their direct reports.
      */
     private function authorizeEmployee(Employee $employee): void
     {
+        $user = Auth::user();
+
         if ((int) $employee->company_id !== $this->getCompanyId()) {
             abort(403, 'Unauthorized access to this employee.');
+        }
+
+        if ($user->hasRole('manager') && ! $user->hasRole('admin')) {
+            $managerEmployee = Employee::where('user_id', $user->id)->first();
+            $isOwnRecord = (int) $employee->user_id === (int) $user->id;
+            $isInSubtree = $managerEmployee && in_array($employee->id, $managerEmployee->getAllSubordinateIds(), true);
+
+            if (! $isOwnRecord && ! $isInSubtree) {
+                abort(403, 'Unauthorized access to this employee.');
+            }
         }
     }
 

@@ -51,6 +51,7 @@
           </template>
           <TimekeepingReports v-else-if="activeTab === 'reports'" />
           <TeamAttendance v-else-if="activeTab === 'team'" />
+          <RequestsPanel v-else-if="activeTab === 'requests'" />
         </div>
       </div>
     </div>
@@ -72,6 +73,7 @@ import AdminAttendance from '@/components/Timekeeping/AdminAttendance.vue'
 import AdminLeaveManagement from '@/components/Timekeeping/AdminLeaveManagement.vue'
 import AdminShiftScheduling from '@/components/Timekeeping/AdminShiftScheduling.vue'
 import AdminOvertimeManagement from '@/components/Timekeeping/AdminOvertimeManagement.vue'
+import RequestsPanel from '@/components/Timekeeping/RequestsPanel.vue'
 
 const page = usePage()
 const isAdmin = computed(() => (page.props.auth as any)?.isAdmin === true)
@@ -92,6 +94,7 @@ const tabs = computed(() => {
   if (showTeamTab.value) {
     base.push({ id: 'team', label: 'Team' })
   }
+  base.push({ id: 'requests', label: 'Requests' })
   return base
 })
 </script>
