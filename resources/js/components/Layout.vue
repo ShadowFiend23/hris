@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex h-screen bg-gray-50">
     <!-- Sidebar -->
     <div
@@ -180,11 +180,21 @@
       </main>
     </div>
   </div>
+
+  <!-- Toast notifications -->
+  <Notivue v-slot="item">
+    <NotivueSwipe :item="item">
+      <Notification :item="item" :theme="lightTheme" :icons="outlinedIcons">
+        <NotificationProgress :item="item" />
+      </Notification>
+    </NotivueSwipe>
+  </Notivue>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Link, router, usePage } from '@inertiajs/vue3'
+import { Notification, NotificationProgress, Notivue, NotivueSwipe, lightTheme, outlinedIcons, push } from 'notivue'
 import {
   AlertCircle,
   AlertTriangle,
@@ -208,6 +218,19 @@ import LicenseExpiryNotice from '@/components/LicenseExpiryNotice.vue'
 
 const sidebarOpen = ref(true);
 const page = usePage()
+
+watch(
+  () => page.props.flash,
+  (flash: any) => {
+    if (flash?.success) {
+      push.success({ title: 'Success', message: flash.success })
+    }
+    if (flash?.error) {
+      push.error({ title: 'Error', message: flash.error })
+    }
+  },
+  { deep: true },
+)
 
 const isAdmin = computed(() => (page.props.auth as any)?.isAdmin === true)
 const isEmployee = computed(() => !(page.props.auth as any)?.isAdmin && !(page.props.auth as any)?.isManager)
@@ -295,7 +318,7 @@ const baseNavigationItems = [
   { label: 'Payroll', href: '/payroll', icon: PhilippinePeso, moduleCode: 'payroll' },
   { label: 'My Payslips', href: '/payroll/my-payslips', icon: FileText, moduleCode: 'payroll', employeeOnly: true },
   { label: 'Loans', href: '/loans', icon: CreditCard, moduleCode: 'payroll', activeOn: ['/loans'], loansOnly: true },
-  { label: 'HR Settings', href: '/hr-settings/leave-types', icon: Settings, moduleCode: 'timekeeping', adminOnly: true, activeOn: ['/hr-settings'] },
+  { label: 'App Settings', href: '/app-settings/leave-types', icon: Settings, moduleCode: 'timekeeping', adminOnly: true, activeOn: ['/app-settings'] },
   { label: 'Licenses', href: '/license/licenses', icon: Lock, moduleCode: null },
 ]
 
@@ -327,7 +350,7 @@ const filteredNavigationItems = computed(() => {
       return { ...item, visible: true, enabled: true }
     }
 
-    // Admin-only items (HR Settings etc.)
+    // Admin-only items (App Settings etc.)
     if ((item as any).adminOnly && !isAdmin.value) {
       return { ...item, visible: false, enabled: false }
     }

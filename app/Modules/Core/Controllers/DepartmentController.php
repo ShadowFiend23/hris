@@ -31,7 +31,7 @@ class DepartmentController extends Controller
             'is_active' => true,
         ]);
 
-        return redirect()->route('hr-settings.employee-settings.index')
+        return redirect()->route('app-settings.employee-settings.index')
             ->with('success', 'Department created successfully.');
     }
 
@@ -54,7 +54,7 @@ class DepartmentController extends Controller
             'description' => $data['description'] ?? null,
         ]);
 
-        return redirect()->route('hr-settings.employee-settings.index')
+        return redirect()->route('app-settings.employee-settings.index')
             ->with('success', 'Department updated successfully.');
     }
 
@@ -70,7 +70,7 @@ class DepartmentController extends Controller
 
         $status = $department->is_active ? 'activated' : 'deactivated';
 
-        return redirect()->route('hr-settings.employee-settings.index')
+        return redirect()->route('app-settings.employee-settings.index')
             ->with('success', "Department {$status}.");
     }
 
@@ -83,13 +83,13 @@ class DepartmentController extends Controller
         $this->authorizeDepartment($department, $request->user()->company_id);
 
         if ($department->employees()->count() > 0) {
-            return redirect()->route('hr-settings.employee-settings.index')
+            return redirect()->route('app-settings.employee-settings.index')
                 ->with('error', 'Cannot delete a department with assigned employees.');
         }
 
         $department->delete();
 
-        return redirect()->route('hr-settings.employee-settings.index')
+        return redirect()->route('app-settings.employee-settings.index')
             ->with('success', 'Department deleted successfully.');
     }
 

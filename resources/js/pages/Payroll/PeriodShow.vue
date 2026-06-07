@@ -41,14 +41,6 @@
       </div>
     </div>
 
-    <!-- Flash Message -->
-    <div
-      v-if="$page.props.flash?.success"
-      class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
-    >
-      {{ $page.props.flash.success }}
-    </div>
-
     <!-- Summary Cards -->
     <div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
       <div class="rounded-lg border border-gray-200 bg-white p-4">

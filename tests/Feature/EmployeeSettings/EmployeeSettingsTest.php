@@ -53,7 +53,7 @@ class EmployeeSettingsTest extends TestCase
         Position::factory()->create(['department_id' => $dept->id]);
 
         $this->actingAs($this->admin)
-            ->get('/hr-settings/employee-settings')
+            ->get('/app-settings/employee-settings')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('HRSettings/EmployeeSettings')
@@ -65,23 +65,23 @@ class EmployeeSettingsTest extends TestCase
     public function test_non_admin_cannot_access_settings(): void
     {
         $this->actingAs($this->nonAdmin)
-            ->get('/hr-settings/employee-settings')
+            ->get('/app-settings/employee-settings')
             ->assertForbidden();
     }
 
     public function test_unauthenticated_redirected_to_login(): void
     {
-        $this->get('/hr-settings/employee-settings')->assertRedirect('/login');
+        $this->get('/app-settings/employee-settings')->assertRedirect('/login');
     }
 
     public function test_admin_can_create_department(): void
     {
         $this->actingAs($this->admin)
-            ->post('/hr-settings/departments', [
+            ->post('/app-settings/departments', [
                 'name' => 'Engineering',
                 'description' => 'Software engineering team',
             ])
-            ->assertRedirect('/hr-settings/employee-settings');
+            ->assertRedirect('/app-settings/employee-settings');
 
         $this->assertDatabaseHas('departments', [
             'company_id' => $this->company->id,
@@ -93,7 +93,7 @@ class EmployeeSettingsTest extends TestCase
     public function test_non_admin_cannot_create_department(): void
     {
         $this->actingAs($this->nonAdmin)
-            ->post('/hr-settings/departments', ['name' => 'Engineering'])
+            ->post('/app-settings/departments', ['name' => 'Engineering'])
             ->assertForbidden();
     }
 
@@ -102,11 +102,11 @@ class EmployeeSettingsTest extends TestCase
         $dept = Department::factory()->create(['company_id' => $this->company->id, 'name' => 'Old Name']);
 
         $this->actingAs($this->admin)
-            ->put("/hr-settings/departments/{$dept->id}", [
+            ->put("/app-settings/departments/{$dept->id}", [
                 'name' => 'New Name',
                 'description' => 'Updated description',
             ])
-            ->assertRedirect('/hr-settings/employee-settings');
+            ->assertRedirect('/app-settings/employee-settings');
 
         $this->assertEquals('New Name', $dept->fresh()->name);
     }
@@ -117,7 +117,7 @@ class EmployeeSettingsTest extends TestCase
         $dept = Department::factory()->create(['company_id' => $otherCompany->id]);
 
         $this->actingAs($this->admin)
-            ->put("/hr-settings/departments/{$dept->id}", ['name' => 'Hacked'])
+            ->put("/app-settings/departments/{$dept->id}", ['name' => 'Hacked'])
             ->assertForbidden();
     }
 
@@ -126,8 +126,8 @@ class EmployeeSettingsTest extends TestCase
         $dept = Department::factory()->create(['company_id' => $this->company->id, 'is_active' => true]);
 
         $this->actingAs($this->admin)
-            ->patch("/hr-settings/departments/{$dept->id}/toggle")
-            ->assertRedirect('/hr-settings/employee-settings');
+            ->patch("/app-settings/departments/{$dept->id}/toggle")
+            ->assertRedirect('/app-settings/employee-settings');
 
         $this->assertFalse($dept->fresh()->is_active);
     }
@@ -137,8 +137,8 @@ class EmployeeSettingsTest extends TestCase
         $dept = Department::factory()->create(['company_id' => $this->company->id]);
 
         $this->actingAs($this->admin)
-            ->delete("/hr-settings/departments/{$dept->id}")
-            ->assertRedirect('/hr-settings/employee-settings');
+            ->delete("/app-settings/departments/{$dept->id}")
+            ->assertRedirect('/app-settings/employee-settings');
 
         $this->assertSoftDeleted('departments', ['id' => $dept->id]);
     }
@@ -154,8 +154,8 @@ class EmployeeSettingsTest extends TestCase
         ]);
 
         $this->actingAs($this->admin)
-            ->delete("/hr-settings/departments/{$dept->id}")
-            ->assertRedirect('/hr-settings/employee-settings');
+            ->delete("/app-settings/departments/{$dept->id}")
+            ->assertRedirect('/app-settings/employee-settings');
 
         $this->assertDatabaseHas('departments', ['id' => $dept->id, 'deleted_at' => null]);
     }
@@ -165,12 +165,12 @@ class EmployeeSettingsTest extends TestCase
         $dept = Department::factory()->create(['company_id' => $this->company->id]);
 
         $this->actingAs($this->admin)
-            ->post('/hr-settings/positions', [
+            ->post('/app-settings/positions', [
                 'position_name' => 'Senior Engineer',
                 'department_id' => $dept->id,
                 'reports_to_position_id' => null,
             ])
-            ->assertRedirect('/hr-settings/employee-settings');
+            ->assertRedirect('/app-settings/employee-settings');
 
         $this->assertDatabaseHas('positions', [
             'department_id' => $dept->id,
@@ -184,12 +184,12 @@ class EmployeeSettingsTest extends TestCase
         $manager = Position::factory()->create(['department_id' => $dept->id, 'position_name' => 'Manager']);
 
         $this->actingAs($this->admin)
-            ->post('/hr-settings/positions', [
+            ->post('/app-settings/positions', [
                 'position_name' => 'Engineer',
                 'department_id' => $dept->id,
                 'reports_to_position_id' => $manager->id,
             ])
-            ->assertRedirect('/hr-settings/employee-settings');
+            ->assertRedirect('/app-settings/employee-settings');
 
         $position = Position::where('position_name', 'Engineer')->first();
         $this->assertEquals($manager->id, $position->reports_to_position_id);
@@ -203,7 +203,7 @@ class EmployeeSettingsTest extends TestCase
 
         // Try to make A report to B — that would create A → B → A cycle
         $this->actingAs($this->admin)
-            ->put("/hr-settings/positions/{$posA->id}", [
+            ->put("/app-settings/positions/{$posA->id}", [
                 'position_name' => $posA->position_name,
                 'department_id' => $dept->id,
                 'reports_to_position_id' => $posB->id,
@@ -217,7 +217,7 @@ class EmployeeSettingsTest extends TestCase
         $pos = Position::factory()->create(['department_id' => $dept->id]);
 
         $this->actingAs($this->admin)
-            ->put("/hr-settings/positions/{$pos->id}", [
+            ->put("/app-settings/positions/{$pos->id}", [
                 'position_name' => $pos->position_name,
                 'department_id' => $dept->id,
                 'reports_to_position_id' => $pos->id,
@@ -231,8 +231,8 @@ class EmployeeSettingsTest extends TestCase
         $pos = Position::factory()->create(['department_id' => $dept->id, 'is_active' => true]);
 
         $this->actingAs($this->admin)
-            ->patch("/hr-settings/positions/{$pos->id}/toggle")
-            ->assertRedirect('/hr-settings/employee-settings');
+            ->patch("/app-settings/positions/{$pos->id}/toggle")
+            ->assertRedirect('/app-settings/employee-settings');
 
         $this->assertFalse($pos->fresh()->is_active);
     }
@@ -243,8 +243,8 @@ class EmployeeSettingsTest extends TestCase
         $pos = Position::factory()->create(['department_id' => $dept->id]);
 
         $this->actingAs($this->admin)
-            ->delete("/hr-settings/positions/{$pos->id}")
-            ->assertRedirect('/hr-settings/employee-settings');
+            ->delete("/app-settings/positions/{$pos->id}")
+            ->assertRedirect('/app-settings/employee-settings');
 
         $this->assertSoftDeleted('positions', ['id' => $pos->id]);
     }
@@ -260,8 +260,8 @@ class EmployeeSettingsTest extends TestCase
         ]);
 
         $this->actingAs($this->admin)
-            ->delete("/hr-settings/positions/{$pos->id}")
-            ->assertRedirect('/hr-settings/employee-settings');
+            ->delete("/app-settings/positions/{$pos->id}")
+            ->assertRedirect('/app-settings/employee-settings');
 
         $this->assertDatabaseHas('positions', ['id' => $pos->id, 'deleted_at' => null]);
     }
@@ -273,7 +273,7 @@ class EmployeeSettingsTest extends TestCase
         Department::factory()->create(['company_id' => $this->company->id, 'name' => 'My Dept']);
 
         $this->actingAs($this->admin)
-            ->get('/hr-settings/employee-settings')
+            ->get('/app-settings/employee-settings')
             ->assertInertia(fn (Assert $page) => $page
                 ->where('departments', fn ($depts) => collect($depts)->every(fn ($d) => $d['name'] !== 'Other Corp Dept'))
             );

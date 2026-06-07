@@ -1,8 +1,8 @@
-<template>
+﻿<template>
   <Layout>
     <!-- Page Header -->
     <div class="mb-6">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">HR Settings</h1>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">App Settings</h1>
       <p class="mt-1 text-gray-600 dark:text-gray-400">Manage leave types, payroll schedules, and other HR configurations.</p>
     </div>
 
@@ -10,40 +10,46 @@
     <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
       <nav class="flex gap-6">
         <Link
-          href="/hr-settings/employee-settings"
+          href="/app-settings/employee-settings"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
         >
           Employee Settings
         </Link>
         <Link
-          href="/hr-settings/leave-types"
+          href="/app-settings/leave-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
         >
           Timekeeping Settings
         </Link>
         <Link
-          href="/hr-settings/payroll"
+          href="/app-settings/payroll"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
         >
           Payroll Settings
         </Link>
         <Link
-          href="/hr-settings/allowance-types"
+          href="/app-settings/allowance-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
         >
           Allowance Settings
         </Link>
         <Link
-          href="/hr-settings/loan-types"
+          href="/app-settings/loan-types"
           class="border-b-2 border-blue-600 pb-3 text-sm font-medium text-blue-600 dark:border-blue-400 dark:text-blue-400"
         >
           Loan Settings
         </Link>
         <Link
-          href="/hr-settings/holidays"
+          href="/app-settings/holidays"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
         >
           Holidays
+        </Link>
+        <Link
+          href="/app-settings/contribution-settings"
+          class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+        >
+          Contribution Settings
         </Link>
       </nav>
     </div>
@@ -54,15 +60,6 @@
       <p class="mt-1 text-gray-600 dark:text-gray-400">
         Configure loan availability and define the loan types offered to employees.
       </p>
-    </div>
-
-    <!-- Flash message -->
-    <div
-      v-if="flashSuccess"
-      class="mb-6 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-800 dark:border-green-700 dark:bg-green-900/30 dark:text-green-300"
-    >
-      <CheckCircle :size="18" class="shrink-0 text-green-600 dark:text-green-400" />
-      {{ flashSuccess }}
     </div>
 
     <!-- Loans Toggle Card -->
@@ -114,83 +111,6 @@
         <input v-model="loanSearch" type="text" placeholder="Search..." class="w-64 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
       </div>
 
-      <!-- Add Form -->
-      <div v-if="showAddForm" class="mb-6 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <h4 class="mb-4 text-base font-semibold text-gray-900 dark:text-white">New Loan Type</h4>
-        <form class="grid grid-cols-1 gap-4 md:grid-cols-2" @submit.prevent="submitAdd">
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-            <input
-              v-model="addForm.name"
-              type="text"
-              placeholder="e.g. Calamity Loan"
-              class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-              required
-            />
-            <p v-if="addErrors.name" class="mt-1 text-xs text-red-600">{{ addErrors.name }}</p>
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Code
-              <span class="font-normal text-gray-500 dark:text-gray-400">(lowercase, underscores only)</span>
-            </label>
-            <input
-              v-model="addForm.code"
-              type="text"
-              placeholder="e.g. calamity_loan"
-              maxlength="20"
-              class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-              required
-            />
-            <p v-if="addErrors.code" class="mt-1 text-xs text-red-600">{{ addErrors.code }}</p>
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Max Amount (₱)
-              <span class="font-normal text-gray-500 dark:text-gray-400">(optional)</span>
-            </label>
-            <input
-              v-model.number="addForm.max_amount"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="e.g. 50000"
-              class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            />
-            <p v-if="addErrors.max_amount" class="mt-1 text-xs text-red-600">{{ addErrors.max_amount }}</p>
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Description
-              <span class="font-normal text-gray-500 dark:text-gray-400">(optional)</span>
-            </label>
-            <input
-              v-model="addForm.description"
-              type="text"
-              placeholder="Brief description"
-              class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            />
-            <p v-if="addErrors.description" class="mt-1 text-xs text-red-600">{{ addErrors.description }}</p>
-          </div>
-          <div class="flex justify-end gap-3 md:col-span-2">
-            <button
-              type="button"
-              class="px-4 py-2 font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-              @click="showAddForm = false"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              :disabled="addForm.processing"
-              class="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
-            >
-              {{ addForm.processing ? 'Saving...' : 'Save Loan Type' }}
-            </button>
-          </div>
-        </form>
-      </div>
-
       <!-- Table -->
       <div class="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
         <table class="w-full text-sm">
@@ -201,15 +121,16 @@
               <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Max Amount</th>
               <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Description</th>
               <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Scope</th>
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Status</th>
               <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
             <tr v-if="props.loanTypes.length === 0">
-              <td colspan="6" class="px-6 py-12 text-center text-gray-400 dark:text-gray-500">No loan types configured yet.</td>
+              <td colspan="7" class="px-6 py-12 text-center text-gray-400 dark:text-gray-500">No loan types configured yet.</td>
             </tr>
             <tr v-else-if="filteredLoanTypes.length === 0">
-              <td colspan="6" class="px-6 py-12 text-center text-gray-400 dark:text-gray-500">No loan types match your search.</td>
+              <td colspan="7" class="px-6 py-12 text-center text-gray-400 dark:text-gray-500">No loan types match your search.</td>
             </tr>
             <tr v-for="lt in paginatedLoanTypes" :key="lt.id" class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50">
               <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
@@ -250,6 +171,18 @@
                 >
                   {{ lt.company_id ? 'Company' : 'Default' }}
                 </span>
+              </td>
+              <td class="px-6 py-4">
+                <template v-if="lt.company_id">
+                  <span v-if="editingId !== lt.id" :class="lt.is_active ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'" class="rounded-full px-2 py-0.5 text-xs font-medium">
+                    {{ lt.is_active ? 'Active' : 'Inactive' }}
+                  </span>
+                  <select v-else v-model="editForm.is_active" class="rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                    <option :value="true">Active</option>
+                    <option :value="false">Inactive</option>
+                  </select>
+                </template>
+                <span v-else class="text-xs text-gray-400 dark:text-gray-500">—</span>
               </td>
               <td class="px-6 py-4 text-right">
                 <div v-if="lt.company_id" class="flex items-center justify-end gap-2">
@@ -305,6 +238,91 @@
       <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Toggle the switch above to enable loans and configure loan types.</p>
     </div>
 
+    <!-- Add Loan Type Modal -->
+    <div v-if="showAddForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="closeAddModal">
+      <div class="mx-4 w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl dark:bg-gray-800">
+        <div class="mb-5 flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">New Loan Type</h2>
+          <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" @click="closeAddModal">
+            <X :size="20" />
+          </button>
+        </div>
+        <form class="grid grid-cols-1 gap-4 md:grid-cols-2" @submit.prevent="submitAdd">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+            <input
+              v-model="addForm.name"
+              type="text"
+              placeholder="e.g. Calamity Loan"
+              class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              required
+            />
+            <p v-if="addErrors.name" class="mt-1 text-xs text-red-600">{{ addErrors.name }}</p>
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Code
+              <span class="font-normal text-gray-500 dark:text-gray-400">(lowercase, underscores only)</span>
+            </label>
+            <input
+              v-model="addForm.code"
+              type="text"
+              placeholder="e.g. calamity_loan"
+              maxlength="20"
+              class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              required
+              @input="codeManuallyEdited = true"
+            />
+            <p v-if="addErrors.code" class="mt-1 text-xs text-red-600">{{ addErrors.code }}</p>
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Max Amount (₱)
+              <span class="font-normal text-gray-500 dark:text-gray-400">(optional)</span>
+            </label>
+            <input
+              v-model.number="addForm.max_amount"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="e.g. 50000"
+              class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+            <p v-if="addErrors.max_amount" class="mt-1 text-xs text-red-600">{{ addErrors.max_amount }}</p>
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Description
+              <span class="font-normal text-gray-500 dark:text-gray-400">(optional)</span>
+            </label>
+            <input
+              v-model="addForm.description"
+              type="text"
+              placeholder="Brief description"
+              class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+            <p v-if="addErrors.description" class="mt-1 text-xs text-red-600">{{ addErrors.description }}</p>
+          </div>
+          <div class="flex justify-end gap-3 md:col-span-2">
+            <button
+              type="button"
+              class="px-4 py-2 font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+              @click="closeAddModal"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              :disabled="addForm.processing"
+              class="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+            >
+              {{ addForm.processing ? 'Saving...' : 'Save Loan Type' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Deactivate Confirm Modal -->
     <div v-if="deactivatingType" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div class="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-gray-800">
@@ -339,7 +357,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Link, useForm, usePage } from '@inertiajs/vue3'
+import { Link, useForm } from '@inertiajs/vue3'
 import { AlertTriangle, CheckCircle, Pencil, Plus, ToggleLeft, Trash2, X } from 'lucide-vue-next'
 import Layout from '@/components/Layout.vue'
 
@@ -357,9 +375,6 @@ const props = defineProps<{
   loanTypes: LoanTypeItem[]
   loansEnabled: boolean
 }>()
-
-const page = usePage()
-const flashSuccess = computed(() => (page.props.flash as any)?.success ?? null)
 
 // Search & Pagination
 const loanSearch = ref('')
@@ -385,10 +400,11 @@ watch(loanSearch, () => { loanPage.value = 1 })
 const toggleForm = useForm({})
 
 const submitToggle = () => {
-  toggleForm.patch('/hr-settings/loan-settings/toggle')
+  toggleForm.patch('/app-settings/loan-settings/toggle')
 }
 
 const showAddForm = ref(false)
+const codeManuallyEdited = ref(false)
 const addForm = useForm({
   name: '',
   code: '',
@@ -397,13 +413,27 @@ const addForm = useForm({
 })
 const addErrors = ref<Record<string, string>>({})
 
+function generateCode(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, '_')
+}
+
+watch(() => addForm.name, (name) => {
+  if (!codeManuallyEdited.value) {
+    addForm.code = generateCode(name)
+  }
+})
+
+const closeAddModal = () => {
+  showAddForm.value = false
+  codeManuallyEdited.value = false
+  addForm.reset()
+  addErrors.value = {}
+}
+
 const submitAdd = () => {
   addErrors.value = {}
-  addForm.post('/hr-settings/loan-types', {
-    onSuccess: () => {
-      showAddForm.value = false
-      addForm.reset()
-    },
+  addForm.post('/app-settings/loan-types', {
+    onSuccess: () => closeAddModal(),
     onError: (errors) => {
       addErrors.value = errors
     },
@@ -415,6 +445,7 @@ const editForm = useForm({
   name: '',
   description: '',
   max_amount: null as number | null,
+  is_active: true,
 })
 
 const startEdit = (lt: LoanTypeItem) => {
@@ -422,6 +453,7 @@ const startEdit = (lt: LoanTypeItem) => {
   editForm.name = lt.name
   editForm.description = lt.description ?? ''
   editForm.max_amount = lt.max_amount
+  editForm.is_active = lt.is_active
 }
 
 const cancelEdit = () => {
@@ -430,9 +462,14 @@ const cancelEdit = () => {
 }
 
 const submitEdit = (id: number) => {
-  editForm.put(`/hr-settings/loan-types/${id}`, {
-    onSuccess: () => cancelEdit(),
-  })
+  editForm
+    .transform(data => ({
+      ...data,
+      is_active: data.is_active ? 1 : 0,
+    }))
+    .put(`/app-settings/loan-types/${id}`, {
+      onSuccess: () => cancelEdit(),
+    })
 }
 
 const deactivatingType = ref<LoanTypeItem | null>(null)
@@ -440,7 +477,7 @@ const destroyForm = useForm({})
 
 const submitDeactivate = () => {
   if (!deactivatingType.value) { return }
-  destroyForm.delete(`/hr-settings/loan-types/${deactivatingType.value.id}`, {
+  destroyForm.delete(`/app-settings/loan-types/${deactivatingType.value.id}`, {
     onSuccess: () => { deactivatingType.value = null },
   })
 }

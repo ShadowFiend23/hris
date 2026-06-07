@@ -577,6 +577,31 @@ watch(xxxSearch, () => { xxxPage.value = 1 })
 | Settings / config tables | `5` | `[5, 10, 25, 50]` |
 | Report tables | `10` | `[10, 25, 50]` |
 
+## Toast Notifications (Notivue)
+
+This project uses **Notivue** for toast notifications. All CRUD operations must show a toast — never inline flash message divs.
+
+### Configuration (already wired in `app.ts` and `Layout.vue`)
+- Plugin: `createNotivue({ position: 'top-right', pauseOnHover: true, avoidDuplicates: true, enqueue: false })`
+- Layout renders: `<Notivue>` → `<NotivueSwipe>` → `<Notification :theme="lightTheme" :icons="outlinedIcons">` + `<NotificationProgress>`
+- CSS overrides in `app.css` make notifications full-width (`--nv-root-left: 0px; --nv-root-right: 0px; --nv-root-top: 0px; --nv-root-width: 100vw; --nv-min-width: 100%; --nv-radius: 0px`)
+
+### Flash → Toast (automatic)
+`Layout.vue` watches `page.props.flash` and fires `push.success()` / `push.error()` automatically. So backend flash messages appear as toasts with no extra frontend code needed.
+
+### Manual toasts (for client-side feedback)
+```typescript
+import { push } from 'notivue'
+
+push.success({ title: 'Saved', message: 'Department updated.' })
+push.error({ title: 'Error', message: 'Something went wrong.' })
+```
+
+### Rules
+- Do NOT add inline `<div v-if="flashSuccess">` blocks to pages — the Layout handles it.
+- Do NOT import `usePage` just for flash — remove it if that's the only use.
+- Include a `title` in every `push` call.
+
 ## Testing Notes
 - Feature tests live in `tests/Feature/`, organized by module (e.g., `tests/Feature/Timekeeping/`).
 - Use model factories and existing factory states when setting up test data.

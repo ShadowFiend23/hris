@@ -104,7 +104,7 @@ class PayrollRbacTest extends TestCase
     {
         $user = $this->userWithPermissions(['payroll.settings']);
 
-        $this->actingAs($user)->get('/hr-settings/payroll')
+        $this->actingAs($user)->get('/app-settings/payroll')
             ->assertInertia(fn (Assert $page) => $page->component('Payroll/Settings/PayrollSettings'));
     }
 
@@ -112,7 +112,7 @@ class PayrollRbacTest extends TestCase
     {
         $user = $this->userWithPermissions(['payroll.view_all']);
 
-        $this->actingAs($user)->get('/hr-settings/payroll')->assertStatus(403);
+        $this->actingAs($user)->get('/app-settings/payroll')->assertStatus(403);
     }
 
     // ───────── Holidays ─────────
@@ -121,7 +121,7 @@ class PayrollRbacTest extends TestCase
     {
         $user = $this->userWithPermissions(['payroll.holidays']);
 
-        $this->actingAs($user)->get('/hr-settings/holidays')
+        $this->actingAs($user)->get('/app-settings/holidays')
             ->assertInertia(fn (Assert $page) => $page->component('Payroll/Settings/Holidays'));
     }
 
@@ -129,7 +129,7 @@ class PayrollRbacTest extends TestCase
     {
         $user = $this->userWithPermissions(['payroll.view_all']);
 
-        $this->actingAs($user)->get('/hr-settings/holidays')->assertStatus(403);
+        $this->actingAs($user)->get('/app-settings/holidays')->assertStatus(403);
     }
 
     // ───────── Loans ─────────

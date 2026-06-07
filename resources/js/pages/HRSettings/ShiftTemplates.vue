@@ -1,8 +1,8 @@
-<template>
+﻿<template>
   <Layout>
     <!-- Page Header -->
     <div class="mb-6">
-      <h1 class="text-3xl font-bold text-gray-900">HR Settings</h1>
+      <h1 class="text-3xl font-bold text-gray-900">App Settings</h1>
       <p class="mt-1 text-gray-600">Manage leave types, shift templates, and other HR configurations.</p>
     </div>
 
@@ -10,40 +10,46 @@
     <div class="mb-6 border-b border-gray-200">
       <nav class="flex gap-6">
         <Link
-          href="/hr-settings/leave-types"
+          href="/app-settings/leave-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Timekeeping Settings
         </Link>
         <Link
-          href="/hr-settings/payroll"
+          href="/app-settings/payroll"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Payroll Settings
         </Link>
         <Link
-          href="/hr-settings/allowance-types"
+          href="/app-settings/allowance-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Allowance Settings
         </Link>
         <Link
-          href="/hr-settings/shift-templates"
+          href="/app-settings/shift-templates"
           class="border-b-2 border-blue-600 pb-3 text-sm font-medium text-blue-600"
         >
           Shift Templates
         </Link>
         <Link
-          href="/hr-settings/holidays"
+          href="/app-settings/holidays"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Holidays
         </Link>
         <Link
-          href="/hr-settings/loan-types"
+          href="/app-settings/loan-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Loan Settings
+        </Link>
+        <Link
+          href="/app-settings/contribution-settings"
+          class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
+        >
+          Contribution Settings
         </Link>
       </nav>
     </div>
@@ -61,12 +67,6 @@
         <Plus :size="20" />
         Add Shift Template
       </button>
-    </div>
-
-    <!-- Flash message -->
-    <div v-if="flashSuccess" class="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
-      <CheckCircle :size="18" class="text-green-600 shrink-0" />
-      {{ flashSuccess }}
     </div>
 
     <!-- Add Form -->
@@ -274,7 +274,7 @@
 
 <script setup lang="ts">
 import Layout from '@/components/Layout.vue'
-import { Link, useForm, usePage } from '@inertiajs/vue3'
+import { Link, useForm } from '@inertiajs/vue3'
 import { CheckCircle, Pencil, Plus, Trash2, X } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import {
@@ -297,9 +297,6 @@ interface ShiftTemplate {
 const props = defineProps<{
   shiftTemplates: ShiftTemplate[]
 }>()
-
-const page = usePage()
-const flashSuccess = computed(() => (page.props.flash as any)?.success ?? null)
 
 function formatTime(time: string | null): string {
   if (!time) return '—'

@@ -64,7 +64,7 @@ class TimekeepingSettingsController extends Controller
 
         $status = $company->leave_enabled ? 'enabled' : 'disabled';
 
-        return redirect()->route('hr-settings.timekeeping.index')
+        return redirect()->route('app-settings.timekeeping.index')
             ->with('success', "Leave has been {$status}.");
     }
 
@@ -79,7 +79,7 @@ class TimekeepingSettingsController extends Controller
 
         $status = $company->ot_enabled ? 'enabled' : 'disabled';
 
-        return redirect()->route('hr-settings.timekeeping.index')
+        return redirect()->route('app-settings.timekeeping.index')
             ->with('success', "Overtime has been {$status}.");
     }
 
@@ -105,7 +105,7 @@ class TimekeepingSettingsController extends Controller
 
         $label = $request->type === 'leave' ? 'Leave' : 'Overtime';
 
-        return redirect()->route('hr-settings.timekeeping.index')
+        return redirect()->route('app-settings.timekeeping.index')
             ->with('success', "{$label} approval chain saved.");
     }
 }

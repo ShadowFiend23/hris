@@ -12,7 +12,7 @@ class ShiftTemplatesController extends Controller
 {
     public function index(): RedirectResponse
     {
-        return redirect(route('hr-settings.timekeeping.index').'?sub=shifts');
+        return redirect(route('app-settings.timekeeping.index').'?sub=shifts');
     }
 
     public function store(Request $request): RedirectResponse
@@ -35,7 +35,7 @@ class ShiftTemplatesController extends Controller
             'is_active' => true,
         ]));
 
-        return redirect(route('hr-settings.timekeeping.index').'?sub=shifts')
+        return redirect(route('app-settings.timekeeping.index').'?sub=shifts')
             ->with('success', 'Shift template created successfully.');
     }
 
@@ -57,7 +57,7 @@ class ShiftTemplatesController extends Controller
 
         $shiftTemplate->update($data);
 
-        return redirect(route('hr-settings.timekeeping.index').'?sub=shifts')
+        return redirect(route('app-settings.timekeeping.index').'?sub=shifts')
             ->with('success', 'Shift template updated successfully.');
     }
 
@@ -67,7 +67,7 @@ class ShiftTemplatesController extends Controller
 
         $shiftTemplate->update(['is_active' => false]);
 
-        return redirect(route('hr-settings.timekeeping.index').'?sub=shifts')
+        return redirect(route('app-settings.timekeeping.index').'?sub=shifts')
             ->with('success', 'Shift template deactivated.');
     }
 

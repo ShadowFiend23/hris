@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Payroll\StoreAllowanceTypeRequest;
 use App\Http\Requests\Payroll\UpdateAllowanceTypeRequest;
 use App\Modules\Payroll\Models\AllowanceType;
+use App\Modules\Payroll\Models\EmployeeAllowance;
 use App\Modules\Payroll\Models\PayrollSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -58,7 +59,7 @@ class AllowanceTypeController extends Controller
             'is_active' => true,
         ]));
 
-        return redirect()->route('hr-settings.allowance-types.index')
+        return redirect()->route('app-settings.allowance-types.index')
             ->with('success', "Allowance type \"{$request->input('name')}\" created.");
     }
 
@@ -68,7 +69,7 @@ class AllowanceTypeController extends Controller
 
         $allowanceType->update($request->validated());
 
-        return redirect()->route('hr-settings.allowance-types.index')
+        return redirect()->route('app-settings.allowance-types.index')
             ->with('success', "Allowance type \"{$allowanceType->name}\" updated.");
     }
 
@@ -76,10 +77,17 @@ class AllowanceTypeController extends Controller
     {
         abort_if((int) $allowanceType->company_id !== (int) $request->user()->company_id, 403);
 
-        // Soft-deactivate to preserve existing employee allowances and payslip history
-        $allowanceType->update(['is_active' => false]);
+        $name = $allowanceType->name;
 
-        return redirect()->route('hr-settings.allowance-types.index')
-            ->with('success', "Allowance type \"{$allowanceType->name}\" deactivated.");
+        $inUse = EmployeeAllowance::where('allowance_type_id', $allowanceType->id)->exists();
+        if ($inUse) {
+            return redirect()->route('app-settings.allowance-types.index')
+                ->with('error', "Cannot delete \"{$name}\" — it is assigned to one or more employees.");
+        }
+
+        $allowanceType->delete();
+
+        return redirect()->route('app-settings.allowance-types.index')
+            ->with('success', "Allowance type \"{$name}\" deleted.");
     }
 }

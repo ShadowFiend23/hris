@@ -62,7 +62,7 @@ class LeaveTypeController extends Controller
                 );
             });
 
-        return redirect()->route('hr-settings.leave-types.index')
+        return redirect()->route('app-settings.leave-types.index')
             ->with('success', "Leave type \"{$leaveType->name}\" created and balances provisioned.");
     }
 
@@ -74,7 +74,7 @@ class LeaveTypeController extends Controller
 
         $leaveType->update($request->validated());
 
-        return redirect()->route('hr-settings.leave-types.index')
+        return redirect()->route('app-settings.leave-types.index')
             ->with('success', "Leave type \"{$leaveType->name}\" updated.");
     }
 
@@ -91,7 +91,7 @@ class LeaveTypeController extends Controller
         // Soft-deactivate: preserve existing balances
         $leaveType->update(['is_active' => false]);
 
-        return redirect()->route('hr-settings.leave-types.index')
+        return redirect()->route('app-settings.leave-types.index')
             ->with('success', "Leave type \"{$leaveType->name}\" deactivated.");
     }
 }

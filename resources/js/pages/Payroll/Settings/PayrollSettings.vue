@@ -1,8 +1,8 @@
-<template>
+﻿<template>
   <Layout>
     <!-- Page Header -->
     <div class="mb-6">
-      <h1 class="text-3xl font-bold text-gray-900">HR Settings</h1>
+      <h1 class="text-3xl font-bold text-gray-900">App Settings</h1>
       <p class="mt-1 text-gray-600">Manage leave types, payroll schedules, and other HR configurations.</p>
     </div>
 
@@ -10,40 +10,46 @@
     <div class="mb-6 border-b border-gray-200">
       <nav class="flex gap-6">
         <Link
-          href="/hr-settings/employee-settings"
+          href="/app-settings/employee-settings"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Employee Settings
         </Link>
         <Link
-          href="/hr-settings/leave-types"
+          href="/app-settings/leave-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Timekeeping Settings
         </Link>
         <Link
-          href="/hr-settings/payroll"
+          href="/app-settings/payroll"
           class="border-b-2 border-blue-600 pb-3 text-sm font-medium text-blue-600"
         >
           Payroll Settings
         </Link>
         <Link
-          href="/hr-settings/allowance-types"
+          href="/app-settings/allowance-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Allowance Settings
         </Link>
         <Link
-          href="/hr-settings/loan-types"
+          href="/app-settings/loan-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Loan Settings
         </Link>
         <Link
-          href="/hr-settings/holidays"
+          href="/app-settings/holidays"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Holidays
+        </Link>
+        <Link
+          href="/app-settings/contribution-settings"
+          class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
+        >
+          Contribution Settings
         </Link>
       </nav>
     </div>
@@ -171,7 +177,7 @@
 
         <div class="mt-8 flex justify-end gap-3">
           <Link
-            href="/hr-settings/leave-types"
+            href="/app-settings/leave-types"
             class="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
           >
             Cancel
@@ -224,6 +230,6 @@ const save = () => {
       ...data,
       night_differential_rate: data.night_differential_rate / 100,
     }))
-    .post('/hr-settings/payroll')
+    .post('/app-settings/payroll')
 }
 </script>

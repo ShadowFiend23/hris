@@ -60,6 +60,20 @@ class PayrollPolicy
         return $this->run($user, $period);
     }
 
+    public function cancel(User $user, PayrollPeriod $period): bool
+    {
+        return $user->hasPermission('payroll.run')
+            && (int) $period->company_id === (int) $user->employee?->company_id
+            && $period->status === 'draft';
+    }
+
+    public function deletePeriod(User $user, PayrollPeriod $period): bool
+    {
+        return $user->hasPermission('payroll.run')
+            && (int) $period->company_id === (int) $user->employee?->company_id
+            && in_array($period->status, ['draft', 'cancelled']);
+    }
+
     public function viewAnySettings(User $user): bool
     {
         return $user->hasPermission('payroll.settings');

@@ -36,6 +36,12 @@ class AttendanceSeeder extends Seeder
 
         $rotationIndex = 0;
 
+        // Assign a random number of absences to ~35% of employees for realistic payroll data
+        $employeeIds = $employees->pluck('id')->toArray();
+        $absenteeCount = (int) ceil(count($employeeIds) * 0.35);
+        $absenteeIds = array_slice($employeeIds, 0, $absenteeCount);
+        shuffle($absenteeIds);
+
         foreach ($employees as $employee) {
             $hadExistingShift = $employee->shift_template_id !== null;
             $shift = $shiftTemplates->first(fn ($s) => $s->id === $employee->shift_template_id);
@@ -61,11 +67,12 @@ class AttendanceSeeder extends Seeder
                 $this->generateYearSchedules($employee, $shift);
             }
 
-            $this->createAttendanceRecords($employee, $shift);
+            $maxAbsences = in_array($employee->id, $absenteeIds) ? rand(2, 4) : 0;
+            $this->createAttendanceRecords($employee, $shift, $maxAbsences);
         }
     }
 
-    private function createAttendanceRecords(Employee $employee, ShiftTemplate $shift): void
+    private function createAttendanceRecords(Employee $employee, ShiftTemplate $shift, int $maxAbsences = 0): void
     {
         $startHour = (int) $shift->start_time->format('H');
         $startMinute = (int) $shift->start_time->format('i');
@@ -80,11 +87,20 @@ class AttendanceSeeder extends Seeder
 
         $date = Carbon::now()->subDays(self::DAYS_TO_SEED)->startOfDay();
         $today = Carbon::now()->startOfDay();
+        $absencesCreated = 0;
 
         while ($date <= $today) {
             $dayOfWeek = (int) $date->format('N'); // 1=Mon … 7=Sun
 
             if (in_array($dayOfWeek, $workDays)) {
+                // Randomly skip work days to simulate absences, spread across the seeded window
+                if ($absencesCreated < $maxAbsences && rand(1, self::DAYS_TO_SEED) <= $maxAbsences * 3) {
+                    $absencesCreated++;
+                    $date->addDay();
+
+                    continue;
+                }
+
                 $clockInVariance = rand(-5, 30);
 
                 $clockIn = $date->copy()

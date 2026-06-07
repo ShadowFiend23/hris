@@ -4,6 +4,7 @@ namespace App\Modules\Payroll\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Payroll\LoanTypeRequest;
+use App\Http\Requests\Payroll\UpdateLoanTypeRequest;
 use App\Modules\Core\Models\Company;
 use App\Modules\Payroll\Models\LoanType;
 use App\Modules\Payroll\Models\PayrollSetting;
@@ -25,7 +26,6 @@ class LoanTypeController extends Controller
         $loanTypes = LoanType::where(function ($q) use ($companyId): void {
             $q->whereNull('company_id')->orWhere('company_id', $companyId);
         })
-            ->where('is_active', true)
             ->orderByRaw('CASE WHEN company_id IS NULL THEN 0 ELSE 1 END, name')
             ->get();
 
@@ -44,7 +44,7 @@ class LoanTypeController extends Controller
 
         $status = $company->loans_enabled ? 'enabled' : 'disabled';
 
-        return redirect()->route('hr-settings.loan-types.index')
+        return redirect()->route('app-settings.loan-types.index')
             ->with('success', "Loans have been {$status} for your company.");
     }
 
@@ -78,17 +78,17 @@ class LoanTypeController extends Controller
             'is_active' => true,
         ]));
 
-        return redirect()->route('hr-settings.loan-types.index')
+        return redirect()->route('app-settings.loan-types.index')
             ->with('success', "Loan type \"{$request->input('name')}\" created.");
     }
 
-    public function update(LoanTypeRequest $request, LoanType $loanType): RedirectResponse
+    public function update(UpdateLoanTypeRequest $request, LoanType $loanType): RedirectResponse
     {
         abort_if((int) $loanType->company_id !== (int) $request->user()->company_id, 403);
 
         $loanType->update($request->validated());
 
-        return redirect()->route('hr-settings.loan-types.index')
+        return redirect()->route('app-settings.loan-types.index')
             ->with('success', "Loan type \"{$loanType->name}\" updated.");
     }
 
@@ -96,9 +96,10 @@ class LoanTypeController extends Controller
     {
         abort_if((int) $loanType->company_id !== (int) $request->user()->company_id, 403);
 
-        $loanType->update(['is_active' => false]);
+        $name = $loanType->name;
+        $loanType->delete();
 
-        return redirect()->route('hr-settings.loan-types.index')
-            ->with('success', "Loan type \"{$loanType->name}\" removed.");
+        return redirect()->route('app-settings.loan-types.index')
+            ->with('success', "Loan type \"{$name}\" deleted.");
     }
 }

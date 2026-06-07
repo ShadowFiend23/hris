@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Payroll\Controllers\AllowanceTypeController;
+use App\Modules\Payroll\Controllers\ContributionSettingsController;
 use App\Modules\Payroll\Controllers\EmployeeAllowanceController;
 use App\Modules\Payroll\Controllers\EmployeePayslipController;
 use App\Modules\Payroll\Controllers\HolidayController;
@@ -22,6 +23,8 @@ Route::middleware(['auth', 'module.access:payroll'])->group(function (): void {
     Route::get('/payroll/periods/{payrollPeriod}', [PayrollPeriodController::class, 'show'])->name('payroll.periods.show');
     Route::post('/payroll/periods/{payrollPeriod}/run', [PayrollPeriodController::class, 'run'])->name('payroll.periods.run');
     Route::post('/payroll/periods/{payrollPeriod}/finalize', [PayrollPeriodController::class, 'finalize'])->name('payroll.periods.finalize');
+    Route::post('/payroll/periods/{payrollPeriod}/cancel', [PayrollPeriodController::class, 'cancel'])->name('payroll.periods.cancel');
+    Route::delete('/payroll/periods/{payrollPeriod}', [PayrollPeriodController::class, 'destroy'])->name('payroll.periods.destroy');
 
     // My Payslips (employee-facing)
     Route::get('/payroll/my-payslips', [EmployeePayslipController::class, 'index'])->name('payroll.my-payslips');
@@ -32,14 +35,14 @@ Route::middleware(['auth', 'module.access:payroll'])->group(function (): void {
     Route::get('/payroll/payslips/{payrollItem}/download', [PayslipController::class, 'download'])->name('payroll.payslips.download');
 
     // Settings (admin only)
-    Route::get('/hr-settings/payroll', [PayrollSettingsController::class, 'index'])->name('payroll.settings.index');
-    Route::post('/hr-settings/payroll', [PayrollSettingsController::class, 'store'])->name('payroll.settings.store');
+    Route::get('/app-settings/payroll', [PayrollSettingsController::class, 'index'])->name('payroll.settings.index');
+    Route::post('/app-settings/payroll', [PayrollSettingsController::class, 'store'])->name('payroll.settings.store');
 
-    // Holidays (admin only) — lives under HR Settings
-    Route::get('/hr-settings/holidays', [HolidayController::class, 'index'])->name('payroll.holidays.index');
-    Route::post('/hr-settings/holidays', [HolidayController::class, 'store'])->name('payroll.holidays.store');
-    Route::put('/hr-settings/holidays/{holiday}', [HolidayController::class, 'update'])->name('payroll.holidays.update');
-    Route::delete('/hr-settings/holidays/{holiday}', [HolidayController::class, 'destroy'])->name('payroll.holidays.destroy');
+    // Holidays (admin only) — lives under App Settings
+    Route::get('/app-settings/holidays', [HolidayController::class, 'index'])->name('payroll.holidays.index');
+    Route::post('/app-settings/holidays', [HolidayController::class, 'store'])->name('payroll.holidays.store');
+    Route::put('/app-settings/holidays/{holiday}', [HolidayController::class, 'update'])->name('payroll.holidays.update');
+    Route::delete('/app-settings/holidays/{holiday}', [HolidayController::class, 'destroy'])->name('payroll.holidays.destroy');
 
     // Loans
     Route::get('/loans', [LoanController::class, 'index'])->name('payroll.loans.index');
@@ -53,8 +56,8 @@ Route::middleware(['auth', 'module.access:payroll'])->group(function (): void {
     Route::put('/api/employees/{employee}/allowances/{allowance}', [EmployeeAllowanceController::class, 'update'])->name('payroll.allowances.update');
     Route::delete('/api/employees/{employee}/allowances/{allowance}', [EmployeeAllowanceController::class, 'destroy'])->name('payroll.allowances.destroy');
 
-    // HR Settings — Allowance Types + Loan Types (admin only)
-    Route::prefix('hr-settings')->name('hr-settings.')->group(function (): void {
+    // App Settings — Allowance Types + Loan Types (admin only)
+    Route::prefix('app-settings')->name('app-settings.')->group(function (): void {
         Route::get('/allowance-types', [AllowanceTypeController::class, 'index'])->name('allowance-types.index');
         Route::post('/allowance-types', [AllowanceTypeController::class, 'store'])->name('allowance-types.store');
         Route::put('/allowance-types/{allowanceType}', [AllowanceTypeController::class, 'update'])->name('allowance-types.update');
@@ -67,7 +70,17 @@ Route::middleware(['auth', 'module.access:payroll'])->group(function (): void {
         Route::patch('/loan-settings/toggle', [LoanTypeController::class, 'toggleLoans'])->name('loan-settings.toggle');
     });
 
+    // Contribution Settings (admin only)
+    Route::prefix('app-settings/contribution-settings')->name('app-settings.contribution.')->group(function (): void {
+        Route::get('/', [ContributionSettingsController::class, 'index'])->name('index');
+        Route::put('/philhealth', [ContributionSettingsController::class, 'updatePhilhealth'])->name('philhealth.update');
+        Route::put('/pagibig', [ContributionSettingsController::class, 'updatePagibig'])->name('pagibig.update');
+        Route::post('/brackets', [ContributionSettingsController::class, 'storeBracket'])->name('brackets.store');
+        Route::put('/brackets/{bracket}', [ContributionSettingsController::class, 'updateBracket'])->name('brackets.update');
+        Route::delete('/brackets/{bracket}', [ContributionSettingsController::class, 'destroyBracket'])->name('brackets.destroy');
+    });
+
     // JSON API for type dropdowns
-    Route::get('/api/hr-settings/allowance-types', [AllowanceTypeController::class, 'apiIndex'])->name('hr-settings.allowance-types.api');
-    Route::get('/api/hr-settings/loan-types', [LoanTypeController::class, 'apiIndex'])->name('hr-settings.loan-types.api');
+    Route::get('/api/app-settings/allowance-types', [AllowanceTypeController::class, 'apiIndex'])->name('app-settings.allowance-types.api');
+    Route::get('/api/app-settings/loan-types', [LoanTypeController::class, 'apiIndex'])->name('app-settings.loan-types.api');
 });

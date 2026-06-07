@@ -208,7 +208,7 @@ class DatabaseSeeder extends Seeder
         $this->call(PHHolidaySeeder::class);
 
         // Seed SSS / PhilHealth / Pag-IBIG contribution brackets
-        $this->call(ContributionBracketSeeder::class);
+        $this->call(ContributionBracketsSeeder::class);
 
         // Seed biometric terminal IN/OUT mappings
         $this->call(BiometricTerminalSeeder::class);
@@ -222,5 +222,8 @@ class DatabaseSeeder extends Seeder
 
         // Seed default loan types
         $this->call(LoanTypeSeeder::class);
+
+        // Seed employee loans (SSS, Pag-IBIG, company) and enable loan deductions
+        $this->call(EmployeeLoanSeeder::class);
     }
 }

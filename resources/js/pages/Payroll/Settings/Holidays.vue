@@ -1,8 +1,8 @@
-<template>
+﻿<template>
   <Layout>
     <!-- Page Header -->
     <div class="mb-6">
-      <h1 class="text-3xl font-bold text-gray-900">HR Settings</h1>
+      <h1 class="text-3xl font-bold text-gray-900">App Settings</h1>
       <p class="mt-1 text-gray-600">Manage leave types, payroll schedules, and other HR configurations.</p>
     </div>
 
@@ -10,40 +10,46 @@
     <div class="mb-6 border-b border-gray-200">
       <nav class="flex gap-6">
         <Link
-          href="/hr-settings/employee-settings"
+          href="/app-settings/employee-settings"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Employee Settings
         </Link>
         <Link
-          href="/hr-settings/leave-types"
+          href="/app-settings/leave-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Timekeeping Settings
         </Link>
         <Link
-          href="/hr-settings/payroll"
+          href="/app-settings/payroll"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Payroll Settings
         </Link>
         <Link
-          href="/hr-settings/allowance-types"
+          href="/app-settings/allowance-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Allowance Settings
         </Link>
         <Link
-          href="/hr-settings/loan-types"
+          href="/app-settings/loan-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Loan Settings
         </Link>
         <Link
-          href="/hr-settings/holidays"
+          href="/app-settings/holidays"
           class="border-b-2 border-blue-600 pb-3 text-sm font-medium text-blue-600"
         >
           Holidays
+        </Link>
+        <Link
+          href="/app-settings/contribution-settings"
+          class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
+        >
+          Contribution Settings
         </Link>
       </nav>
     </div>
@@ -62,14 +68,6 @@
         <Plus :size="20" />
         Add Holiday
       </button>
-    </div>
-
-    <!-- Flash -->
-    <div
-      v-if="$page.props.flash?.success"
-      class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
-    >
-      {{ $page.props.flash.success }}
     </div>
 
     <!-- Create / Edit Modal -->
@@ -181,6 +179,16 @@
       </div>
     </div>
 
+    <!-- Search -->
+    <div class="mb-3 flex justify-end">
+      <input
+        v-model="holidaySearch"
+        type="text"
+        placeholder="Search..."
+        class="w-64 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+      />
+    </div>
+
     <!-- Holidays Table -->
     <div class="rounded-lg border border-gray-200 bg-white">
       <!-- Empty State -->
@@ -203,6 +211,9 @@
             </tr>
           </thead>
           <tbody>
+            <tr v-if="filteredHolidays.length === 0">
+              <td :colspan="canManage ? 6 : 5" class="px-6 py-12 text-center text-gray-400">No holidays match your search.</td>
+            </tr>
             <tr
               v-for="holiday in paginatedHolidays"
               :key="holiday.id"
@@ -277,7 +288,7 @@
             />
           </div>
           <div class="flex w-1/3 justify-end">
-            <p class="text-sm text-gray-600">{{ holidays.length }} total holidays</p>
+            <p class="text-sm text-gray-600">{{ holidaySearch ? `${filteredHolidays.length} of ${holidays.length}` : holidays.length }} total holidays</p>
           </div>
         </div>
       </template>
@@ -286,7 +297,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Link, usePage, useForm, router } from '@inertiajs/vue3'
 import { Plus, Loader2, AlertTriangle, Star } from 'lucide-vue-next'
 import Layout from '@/components/Layout.vue'
@@ -309,14 +320,26 @@ const page = usePage()
 const permissions = computed<string[]>(() => (page.props.auth as any)?.permissions ?? [])
 const canManage = computed(() => permissions.value.includes('payroll.holidays'))
 
+const holidaySearch = ref('')
 const perPage = ref(5)
 const currentPage = ref(1)
-const totalPages = computed(() => Math.ceil(props.holidays.length / perPage.value))
+
+const filteredHolidays = computed(() => {
+  const q = holidaySearch.value.toLowerCase()
+  if (!q) { return props.holidays }
+  return props.holidays.filter(h =>
+    h.name.toLowerCase().includes(q) ||
+    h.type.toLowerCase().includes(q) ||
+    (h.company_id ? 'company' : 'national').includes(q),
+  )
+})
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredHolidays.value.length / perPage.value)))
 const paginatedHolidays = computed(() => {
   const start = (currentPage.value - 1) * perPage.value
-  return props.holidays.slice(start, start + perPage.value)
+  return filteredHolidays.value.slice(start, start + perPage.value)
 })
 const changePerPage = () => { currentPage.value = 1 }
+watch(holidaySearch, () => { currentPage.value = 1 })
 
 const showModal = ref(false)
 const editingHoliday = ref<Holiday | null>(null)
@@ -354,11 +377,11 @@ const closeModal = () => {
 
 const submitForm = () => {
   if (editingHoliday.value) {
-    form.put(`/hr-settings/holidays/${editingHoliday.value.id}`, {
+    form.put(`/app-settings/holidays/${editingHoliday.value.id}`, {
       onSuccess: closeModal,
     })
   } else {
-    form.post('/hr-settings/holidays', {
+    form.post('/app-settings/holidays', {
       onSuccess: closeModal,
     })
   }
@@ -366,7 +389,7 @@ const submitForm = () => {
 
 const confirmDelete = () => {
   if (!deletingHoliday.value) { return }
-  router.delete(`/hr-settings/holidays/${deletingHoliday.value.id}`, {
+  router.delete(`/app-settings/holidays/${deletingHoliday.value.id}`, {
     onSuccess: () => { deletingHoliday.value = null },
   })
 }

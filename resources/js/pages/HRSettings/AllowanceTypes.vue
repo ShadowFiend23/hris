@@ -1,8 +1,8 @@
-<template>
+﻿<template>
   <Layout>
     <!-- Page Header -->
     <div class="mb-6">
-      <h1 class="text-3xl font-bold text-gray-900">HR Settings</h1>
+      <h1 class="text-3xl font-bold text-gray-900">App Settings</h1>
       <p class="mt-1 text-gray-600">Manage leave types, payroll schedules, and other HR configurations.</p>
     </div>
 
@@ -10,40 +10,46 @@
     <div class="mb-6 border-b border-gray-200">
       <nav class="flex gap-6">
         <Link
-          href="/hr-settings/employee-settings"
+          href="/app-settings/employee-settings"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Employee Settings
         </Link>
         <Link
-          href="/hr-settings/leave-types"
+          href="/app-settings/leave-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Timekeeping Settings
         </Link>
         <Link
-          href="/hr-settings/payroll"
+          href="/app-settings/payroll"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Payroll Settings
         </Link>
         <Link
-          href="/hr-settings/allowance-types"
+          href="/app-settings/allowance-types"
           class="border-b-2 border-blue-600 pb-3 text-sm font-medium text-blue-600"
         >
           Allowance Settings
         </Link>
         <Link
-          href="/hr-settings/loan-types"
+          href="/app-settings/loan-types"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Loan Settings
         </Link>
         <Link
-          href="/hr-settings/holidays"
+          href="/app-settings/holidays"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Holidays
+        </Link>
+        <Link
+          href="/app-settings/contribution-settings"
+          class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
+        >
+          Contribution Settings
         </Link>
       </nav>
     </div>
@@ -65,85 +71,6 @@
     <!-- Search -->
     <div class="mb-4 flex justify-end">
       <input v-model="allowanceSearch" type="text" placeholder="Search..." class="w-64 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-    </div>
-
-    <!-- Flash message -->
-    <div
-      v-if="flashSuccess"
-      class="mb-6 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-800"
-    >
-      <CheckCircle :size="18" class="shrink-0 text-green-600" />
-      {{ flashSuccess }}
-    </div>
-
-    <!-- Add Form -->
-    <div v-if="showAddForm" class="mb-6 rounded-lg border border-gray-200 bg-white p-6">
-      <h2 class="mb-4 text-lg font-semibold text-gray-900">New Allowance Type</h2>
-      <form class="grid grid-cols-1 gap-4 md:grid-cols-2" @submit.prevent="submitAdd">
-        <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700">Name</label>
-          <input
-            v-model="addForm.name"
-            type="text"
-            placeholder="e.g. Gas Allowance"
-            class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-          <p v-if="addErrors.name" class="mt-1 text-xs text-red-600">{{ addErrors.name }}</p>
-        </div>
-        <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700">
-            Code
-            <span class="font-normal text-gray-500">(lowercase, underscores only)</span>
-          </label>
-          <input
-            v-model="addForm.code"
-            type="text"
-            placeholder="e.g. gas"
-            maxlength="50"
-            class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-          <p v-if="addErrors.code" class="mt-1 text-xs text-red-600">{{ addErrors.code }}</p>
-        </div>
-        <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700">
-            Default Amount (₱)
-            <span class="font-normal text-gray-500">(optional, pre-fills employee form)</span>
-          </label>
-          <input
-            v-model.number="addForm.default_amount"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="e.g. 1500"
-            class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <p v-if="addErrors.default_amount" class="mt-1 text-xs text-red-600">{{ addErrors.default_amount }}</p>
-        </div>
-        <div class="flex items-center pt-6">
-          <label class="flex cursor-pointer items-center gap-2">
-            <input v-model="addForm.is_taxable" type="checkbox" class="rounded" />
-            <span class="text-sm text-gray-700">Taxable benefit</span>
-          </label>
-        </div>
-        <div class="flex justify-end gap-3 md:col-span-2">
-          <button
-            type="button"
-            class="px-4 py-2 font-medium text-gray-600 hover:text-gray-900"
-            @click="showAddForm = false"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            :disabled="addForm.processing"
-            class="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
-          >
-            {{ addForm.processing ? 'Saving...' : 'Save Allowance Type' }}
-          </button>
-        </div>
-      </form>
     </div>
 
     <!-- Table -->
@@ -213,9 +140,8 @@
                   <Pencil :size="16" />
                 </button>
                 <button
-                  v-if="at.is_active"
                   class="rounded p-1 text-red-500 hover:text-red-700"
-                  title="Deactivate"
+                  title="Delete"
                   @click="deactivatingType = at"
                 >
                   <Trash2 :size="16" />
@@ -252,6 +178,84 @@
       </div>
     </div>
 
+    <!-- Add Allowance Type Modal -->
+    <div v-if="showAddForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="closeAddModal">
+      <div class="mx-4 w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl dark:bg-gray-800">
+        <div class="mb-5 flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">New Allowance Type</h2>
+          <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" @click="closeAddModal">
+            <X :size="20" />
+          </button>
+        </div>
+        <form class="grid grid-cols-1 gap-4 md:grid-cols-2" @submit.prevent="submitAdd">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+            <input
+              v-model="addForm.name"
+              type="text"
+              placeholder="e.g. Gas Allowance"
+              class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              required
+            />
+            <p v-if="addErrors.name" class="mt-1 text-xs text-red-600">{{ addErrors.name }}</p>
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Code
+              <span class="font-normal text-gray-500 dark:text-gray-400">(lowercase, underscores only)</span>
+            </label>
+            <input
+              v-model="addForm.code"
+              type="text"
+              placeholder="e.g. gas"
+              maxlength="50"
+              class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              required
+              @input="codeManuallyEdited = true"
+            />
+            <p v-if="addErrors.code" class="mt-1 text-xs text-red-600">{{ addErrors.code }}</p>
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Default Amount (₱)
+              <span class="font-normal text-gray-500 dark:text-gray-400">(optional)</span>
+            </label>
+            <input
+              v-model.number="addForm.default_amount"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="e.g. 1500"
+              class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+            <p v-if="addErrors.default_amount" class="mt-1 text-xs text-red-600">{{ addErrors.default_amount }}</p>
+          </div>
+          <div class="flex items-center pt-5">
+            <label class="flex cursor-pointer items-center gap-2">
+              <input v-model="addForm.is_taxable" type="checkbox" class="rounded" />
+              <span class="text-sm text-gray-700 dark:text-gray-300">Taxable benefit</span>
+            </label>
+          </div>
+          <div class="flex justify-end gap-3 md:col-span-2">
+            <button
+              type="button"
+              class="px-4 py-2 font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+              @click="closeAddModal"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              :disabled="addForm.processing"
+              class="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+            >
+              {{ addForm.processing ? 'Saving...' : 'Save Allowance Type' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Deactivate Confirm Modal -->
     <div v-if="deactivatingType" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div class="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
@@ -260,10 +264,9 @@
             <AlertTriangle class="h-5 w-5 text-red-600" />
           </div>
           <div>
-            <h3 class="text-lg font-semibold text-gray-900">Deactivate Allowance Type</h3>
+            <h3 class="text-lg font-semibold text-gray-900">Delete Allowance Type</h3>
             <p class="mt-1 text-sm text-gray-600">
-              Deactivate <strong>{{ deactivatingType.name }}</strong>? It will no longer appear in the allowance type
-              dropdown. Existing employee allowances will be preserved.
+              Delete <strong>{{ deactivatingType.name }}</strong>? This action cannot be undone.
             </p>
           </div>
         </div>
@@ -276,7 +279,7 @@
             class="rounded-lg bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700 disabled:opacity-50"
             @click="submitDeactivate"
           >
-            {{ destroyForm.processing ? 'Deactivating...' : 'Deactivate' }}
+            {{ destroyForm.processing ? 'Deleting...' : 'Delete' }}
           </button>
         </div>
       </div>
@@ -287,7 +290,7 @@
 <script setup lang="ts">
 import { AlertTriangle, CheckCircle, Pencil, Plus, Trash2, X } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
-import { Link, useForm, usePage } from '@inertiajs/vue3'
+import { Link, useForm } from '@inertiajs/vue3'
 import Layout from '@/components/Layout.vue'
 
 interface AllowanceTypeItem {
@@ -302,9 +305,6 @@ interface AllowanceTypeItem {
 const props = defineProps<{
   allowanceTypes: AllowanceTypeItem[]
 }>()
-
-const page = usePage()
-const flashSuccess = computed(() => (page.props.flash as any)?.success ?? null)
 
 // Search & Pagination
 const allowanceSearch = ref('')
@@ -327,6 +327,7 @@ watch(allowanceSearch, () => { allowancePage.value = 1 })
 
 // Add form
 const showAddForm = ref(false)
+const codeManuallyEdited = ref(false)
 const addForm = useForm({
   code: '',
   name: '',
@@ -335,13 +336,27 @@ const addForm = useForm({
 })
 const addErrors = ref<Record<string, string>>({})
 
+function generateCode(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, '_')
+}
+
+watch(() => addForm.name, (name) => {
+  if (!codeManuallyEdited.value) {
+    addForm.code = generateCode(name)
+  }
+})
+
+const closeAddModal = () => {
+  showAddForm.value = false
+  codeManuallyEdited.value = false
+  addForm.reset()
+  addErrors.value = {}
+}
+
 const submitAdd = () => {
   addErrors.value = {}
-  addForm.post('/hr-settings/allowance-types', {
-    onSuccess: () => {
-      showAddForm.value = false
-      addForm.reset()
-    },
+  addForm.post('/app-settings/allowance-types', {
+    onSuccess: () => closeAddModal(),
     onError: (errors) => {
       addErrors.value = errors
     },
@@ -371,9 +386,15 @@ const cancelEdit = () => {
 }
 
 const submitEdit = (id: number) => {
-  editForm.put(`/hr-settings/allowance-types/${id}`, {
-    onSuccess: () => cancelEdit(),
-  })
+  editForm
+    .transform(data => ({
+      ...data,
+      is_taxable: data.is_taxable ? 1 : 0,
+      is_active: data.is_active ? 1 : 0,
+    }))
+    .put(`/app-settings/allowance-types/${id}`, {
+      onSuccess: () => cancelEdit(),
+    })
 }
 
 // Deactivate
@@ -382,7 +403,7 @@ const destroyForm = useForm({})
 
 const submitDeactivate = () => {
   if (!deactivatingType.value) { return }
-  destroyForm.delete(`/hr-settings/allowance-types/${deactivatingType.value.id}`, {
+  destroyForm.delete(`/app-settings/allowance-types/${deactivatingType.value.id}`, {
     onSuccess: () => { deactivatingType.value = null },
   })
 }

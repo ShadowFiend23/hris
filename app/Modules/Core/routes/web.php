@@ -31,8 +31,8 @@ Route::middleware(['auth', 'module.access:hris'])->group(function () {
         ->name('employees.restore')
         ->withTrashed();
 
-    // HR Settings — Employee Settings (departments & positions)
-    Route::prefix('hr-settings')->name('hr-settings.')->group(function () {
+    // App Settings — Employee Settings (departments & positions)
+    Route::prefix('app-settings')->name('app-settings.')->group(function () {
         Route::get('/employee-settings', [EmployeeSettingsController::class, 'index'])->name('employee-settings.index');
 
         // Departments

@@ -170,3 +170,13 @@
         @apply bg-background text-foreground;
     }
 }
+
+/* Notivue full-width override */
+:root {
+    --nv-root-left: 0px;
+    --nv-root-right: 0px;
+    --nv-root-top: 0px;
+    --nv-root-width: 100vw;
+    --nv-min-width: 100%;
+    --nv-radius: 0px;
+}

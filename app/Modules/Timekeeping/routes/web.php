@@ -20,8 +20,8 @@ Route::middleware(['auth', 'module.access:timekeeping'])->group(function () {
     // Dashboard calendar events API
     Route::get('/api/dashboard/calendar', [CalendarController::class, 'index'])->name('dashboard.calendar');
 
-    // HR Settings — admin-only leave type & shift template management
-    Route::prefix('hr-settings')->name('hr-settings.')->group(function () {
+    // App Settings — admin-only leave type & shift template management
+    Route::prefix('app-settings')->name('app-settings.')->group(function () {
         // Timekeeping Settings (Leave + OT toggles, approval chains, leave types)
         Route::get('/leave-types', [TimekeepingSettingsController::class, 'index'])->name('timekeeping.index');
         Route::patch('/timekeeping/toggle-leave', [TimekeepingSettingsController::class, 'toggleLeave'])->name('timekeeping.toggle-leave');

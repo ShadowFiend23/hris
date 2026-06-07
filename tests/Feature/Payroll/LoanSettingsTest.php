@@ -67,7 +67,7 @@ class LoanSettingsTest extends TestCase
     public function test_loan_settings_page_passes_loans_enabled_true(): void
     {
         $this->actingAs($this->adminUser)
-            ->get('/hr-settings/loan-types')
+            ->get('/app-settings/loan-types')
             ->assertInertia(fn (Assert $page) => $page
                 ->component('HRSettings/LoanTypes')
                 ->where('loansEnabled', true)
@@ -79,7 +79,7 @@ class LoanSettingsTest extends TestCase
         $this->company->update(['loans_enabled' => false]);
 
         $this->actingAs($this->adminUser)
-            ->get('/hr-settings/loan-types')
+            ->get('/app-settings/loan-types')
             ->assertInertia(fn (Assert $page) => $page
                 ->component('HRSettings/LoanTypes')
                 ->where('loansEnabled', false)
@@ -91,8 +91,8 @@ class LoanSettingsTest extends TestCase
         $this->company->update(['loans_enabled' => false]);
 
         $this->actingAs($this->adminUser)
-            ->patch('/hr-settings/loan-settings/toggle')
-            ->assertRedirect('/hr-settings/loan-types');
+            ->patch('/app-settings/loan-settings/toggle')
+            ->assertRedirect('/app-settings/loan-types');
 
         $this->assertTrue($this->company->fresh()->loans_enabled);
     }
@@ -100,8 +100,8 @@ class LoanSettingsTest extends TestCase
     public function test_toggle_disables_loans_when_enabled(): void
     {
         $this->actingAs($this->adminUser)
-            ->patch('/hr-settings/loan-settings/toggle')
-            ->assertRedirect('/hr-settings/loan-types');
+            ->patch('/app-settings/loan-settings/toggle')
+            ->assertRedirect('/app-settings/loan-types');
 
         $this->assertFalse($this->company->fresh()->loans_enabled);
     }
@@ -111,19 +111,19 @@ class LoanSettingsTest extends TestCase
         $otherCompany = Company::factory()->create(['loans_enabled' => true]);
 
         $this->actingAs($this->adminUser)
-            ->patch('/hr-settings/loan-settings/toggle');
+            ->patch('/app-settings/loan-settings/toggle');
 
         $this->assertTrue($otherCompany->fresh()->loans_enabled);
     }
 
     public function test_unauthenticated_cannot_access_loan_settings(): void
     {
-        $this->get('/hr-settings/loan-types')->assertRedirect('/login');
+        $this->get('/app-settings/loan-types')->assertRedirect('/login');
     }
 
     public function test_unauthenticated_cannot_toggle_loans(): void
     {
-        $this->patch('/hr-settings/loan-settings/toggle')->assertRedirect('/login');
+        $this->patch('/app-settings/loan-settings/toggle')->assertRedirect('/login');
     }
 
     public function test_loan_types_index_excludes_other_company_types(): void
@@ -134,7 +134,7 @@ class LoanSettingsTest extends TestCase
         LoanType::create(['company_id' => $otherCompany->id, 'name' => 'Other Loan', 'code' => 'other_loan', 'is_active' => true]);
 
         $this->actingAs($this->adminUser)
-            ->get('/hr-settings/loan-types')
+            ->get('/app-settings/loan-types')
             ->assertInertia(fn (Assert $page) => $page
                 ->component('HRSettings/LoanTypes')
                 ->has('loanTypes', 2)
@@ -162,7 +162,7 @@ class LoanSettingsTest extends TestCase
     public function test_shared_loans_enabled_prop_is_true_by_default(): void
     {
         $this->actingAs($this->adminUser)
-            ->get('/hr-settings/loan-types')
+            ->get('/app-settings/loan-types')
             ->assertInertia(fn (Assert $page) => $page
                 ->where('loansEnabled', true)
             );
@@ -173,9 +173,85 @@ class LoanSettingsTest extends TestCase
         $this->company->update(['loans_enabled' => false]);
 
         $this->actingAs($this->adminUser)
-            ->get('/hr-settings/loan-types')
+            ->get('/app-settings/loan-types')
             ->assertInertia(fn (Assert $page) => $page
                 ->where('loansEnabled', false)
             );
+    }
+
+    public function test_store_creates_loan_type(): void
+    {
+        $this->actingAs($this->adminUser)
+            ->post('/app-settings/loan-types', [
+                'name' => 'Calamity Loan',
+                'code' => 'calamity_loan',
+                'description' => 'For calamity victims',
+                'max_amount' => 50000,
+            ])
+            ->assertRedirect('/app-settings/loan-types');
+
+        $this->assertDatabaseHas('loan_types', [
+            'company_id' => $this->company->id,
+            'name' => 'Calamity Loan',
+            'code' => 'calamity_loan',
+            'is_active' => true,
+        ]);
+    }
+
+    public function test_update_loan_type_without_code(): void
+    {
+        $loanType = LoanType::create([
+            'company_id' => $this->company->id,
+            'name' => 'Staff Loan',
+            'code' => 'staff_loan',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->adminUser)
+            ->put("/app-settings/loan-types/{$loanType->id}", [
+                'name' => 'Updated Staff Loan',
+                'description' => 'Updated description',
+                'max_amount' => 30000,
+            ])
+            ->assertRedirect('/app-settings/loan-types');
+
+        $this->assertDatabaseHas('loan_types', [
+            'id' => $loanType->id,
+            'name' => 'Updated Staff Loan',
+            'code' => 'staff_loan',
+        ]);
+    }
+
+    public function test_destroy_permanently_deletes_loan_type(): void
+    {
+        $loanType = LoanType::create([
+            'company_id' => $this->company->id,
+            'name' => 'Staff Loan',
+            'code' => 'staff_loan',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->adminUser)
+            ->delete("/app-settings/loan-types/{$loanType->id}")
+            ->assertRedirect('/app-settings/loan-types');
+
+        $this->assertDatabaseMissing('loan_types', ['id' => $loanType->id]);
+    }
+
+    public function test_destroy_cannot_delete_other_company_loan_type(): void
+    {
+        $otherCompany = Company::factory()->create();
+        $loanType = LoanType::create([
+            'company_id' => $otherCompany->id,
+            'name' => 'Other Loan',
+            'code' => 'other_loan',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->adminUser)
+            ->delete("/app-settings/loan-types/{$loanType->id}")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('loan_types', ['id' => $loanType->id]);
     }
 }

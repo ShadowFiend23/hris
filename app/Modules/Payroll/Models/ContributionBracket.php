@@ -15,6 +15,9 @@ class ContributionBracket extends Model
         'employer_rate',
         'employee_amount',
         'employer_amount',
+        'min_contribution',
+        'max_contribution',
+        'notes',
         'is_active',
     ];
 
@@ -28,6 +31,8 @@ class ContributionBracket extends Model
             'employer_rate' => 'decimal:4',
             'employee_amount' => 'decimal:2',
             'employer_amount' => 'decimal:2',
+            'min_contribution' => 'decimal:2',
+            'max_contribution' => 'decimal:2',
             'is_active' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',

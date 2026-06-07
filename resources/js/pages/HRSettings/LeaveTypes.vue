@@ -1,31 +1,34 @@
-<template>
+﻿<template>
   <Layout>
     <!-- Page Header -->
     <div class="mb-6">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">HR Settings</h1>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">App Settings</h1>
       <p class="mt-1 text-gray-600 dark:text-gray-400">Manage leave types, payroll schedules, and other HR configurations.</p>
     </div>
 
     <!-- Top-level Tabs (Shift Templates removed — now a sub-tab) -->
     <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
       <nav class="flex gap-6">
-        <Link href="/hr-settings/employee-settings" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <Link href="/app-settings/employee-settings" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           Employee Settings
         </Link>
-        <Link href="/hr-settings/leave-types" class="border-b-2 border-blue-600 pb-3 text-sm font-medium text-blue-600 dark:border-blue-400 dark:text-blue-400">
+        <Link href="/app-settings/leave-types" class="border-b-2 border-blue-600 pb-3 text-sm font-medium text-blue-600 dark:border-blue-400 dark:text-blue-400">
           Timekeeping Settings
         </Link>
-        <Link href="/hr-settings/payroll" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <Link href="/app-settings/payroll" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           Payroll Settings
         </Link>
-        <Link href="/hr-settings/allowance-types" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <Link href="/app-settings/allowance-types" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           Allowance Settings
         </Link>
-        <Link href="/hr-settings/loan-types" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <Link href="/app-settings/loan-types" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           Loan Settings
         </Link>
-        <Link href="/hr-settings/holidays" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <Link href="/app-settings/holidays" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           Holidays
+        </Link>
+        <Link href="/app-settings/contribution-settings" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          Contribution Settings
         </Link>
       </nav>
     </div>
@@ -71,12 +74,6 @@
         <LayoutGrid :size="16" />
         Shift Templates
       </button>
-    </div>
-
-    <!-- Flash message -->
-    <div v-if="flashSuccess" class="mb-6 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-800 dark:border-green-700 dark:bg-green-900/30 dark:text-green-300">
-      <CheckCircle :size="18" class="shrink-0 text-green-600 dark:text-green-400" />
-      {{ flashSuccess }}
     </div>
 
     <!-- ═══════════════════════════════════════════ LEAVE SECTION ═══ -->
@@ -683,7 +680,6 @@ const props = defineProps<{
 }>()
 
 const page = usePage()
-const flashSuccess = computed(() => (page.props.flash as any)?.success ?? null)
 
 // ─── Sub-tabs ─────────────────────────────────────────────────────────────────
 const urlParams = new URLSearchParams(window.location.search)

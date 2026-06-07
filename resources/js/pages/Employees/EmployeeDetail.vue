@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Layout>
     <!-- Page Header -->
     <div class="mb-8">
@@ -1031,7 +1031,7 @@ const loadAllowances = async () => {
   try {
     const [allowancesRes, typesRes] = await Promise.all([
       axios.get<Allowance[]>(`/api/employees/${props.employee.id}/allowances`),
-      axios.get<AllowanceTypeOption[]>('/api/hr-settings/allowance-types'),
+      axios.get<AllowanceTypeOption[]>('/api/app-settings/allowance-types'),
     ])
     allowances.value = allowancesRes.data
     allowanceTypes.value = typesRes.data

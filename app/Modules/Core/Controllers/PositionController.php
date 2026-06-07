@@ -36,7 +36,7 @@ class PositionController extends Controller
 
         Position::create($data);
 
-        return redirect()->route('hr-settings.employee-settings.index')
+        return redirect()->route('app-settings.employee-settings.index')
             ->with('success', 'Position created successfully.');
     }
 
@@ -70,7 +70,7 @@ class PositionController extends Controller
 
         $position->update($data);
 
-        return redirect()->route('hr-settings.employee-settings.index')
+        return redirect()->route('app-settings.employee-settings.index')
             ->with('success', 'Position updated successfully.');
     }
 
@@ -86,7 +86,7 @@ class PositionController extends Controller
 
         $status = $position->is_active ? 'activated' : 'deactivated';
 
-        return redirect()->route('hr-settings.employee-settings.index')
+        return redirect()->route('app-settings.employee-settings.index')
             ->with('success', "Position {$status}.");
     }
 
@@ -99,13 +99,13 @@ class PositionController extends Controller
         $this->authorizePosition($position, $request->user()->company_id);
 
         if ($position->employees()->count() > 0) {
-            return redirect()->route('hr-settings.employee-settings.index')
+            return redirect()->route('app-settings.employee-settings.index')
                 ->with('error', 'Cannot delete a position with assigned employees.');
         }
 
         $position->delete();
 
-        return redirect()->route('hr-settings.employee-settings.index')
+        return redirect()->route('app-settings.employee-settings.index')
             ->with('success', 'Position deleted successfully.');
     }
 

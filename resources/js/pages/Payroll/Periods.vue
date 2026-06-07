@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Layout>
     <!-- Page Header -->
     <div class="mb-8">
@@ -13,7 +13,7 @@
         </div>
         <button
           v-if="canRun"
-          @click="showCreateForm = true"
+          @click="openCreateForm"
           class="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700"
         >
           <Plus :size="20" />
@@ -32,7 +32,7 @@
         <p class="font-medium text-amber-900">Payroll settings not configured</p>
         <p class="text-sm text-amber-700">
           Configure payroll settings before creating periods.
-          <Link href="/hr-settings/payroll" class="underline">Go to settings →</Link>
+          <Link href="/app-settings/payroll" class="underline">Go to settings →</Link>
         </p>
       </div>
     </div>
@@ -41,75 +41,48 @@
     <div
       v-if="showCreateForm"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      @click.self="showCreateForm = false"
+      @click.self="showCreateForm = false; form.reset()"
     >
-      <div class="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl mx-4">
-        <h2 class="mb-4 text-xl font-bold text-gray-900">New Payroll Period</h2>
+      <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl mx-4">
+        <h2 class="mb-1 text-xl font-bold text-gray-900">New Payroll Period</h2>
+        <p class="mb-5 text-sm text-gray-500">
+          {{ setting ? `${formatPeriodType(setting.period_type)} — Pay days: ${setting.pay_day_1}${setting.pay_day_2 ? ' & ' + setting.pay_day_2 : ''}` : '' }}
+        </p>
+
+        <!-- Auto-calculated period (read-only) -->
+        <div class="mb-5 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+          <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Pay Period (auto-calculated)</p>
+          <p class="mt-1 text-base font-semibold text-gray-900">
+            {{ nextPeriod ? `${formatDate(nextPeriod.start_date)} – ${formatDate(nextPeriod.end_date)}` : '—' }}
+          </p>
+        </div>
+
         <form @submit.prevent="submitCreate">
-          <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700">Start Date</label>
-                <input
-                  v-model="form.start_date"
-                  type="date"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-                <p v-if="form.errors.start_date" class="mt-1 text-xs text-red-600">
-                  {{ form.errors.start_date }}
-                </p>
-              </div>
-              <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700">End Date</label>
-                <input
-                  v-model="form.end_date"
-                  type="date"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-                <p v-if="form.errors.end_date" class="mt-1 text-xs text-red-600">
-                  {{ form.errors.end_date }}
-                </p>
-              </div>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">Pay Date</label>
-              <input
-                v-model="form.pay_date"
-                type="date"
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-              <p v-if="form.errors.pay_date" class="mt-1 text-xs text-red-600">
-                {{ form.errors.pay_date }}
-              </p>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">Payroll Setting</label>
-              <input
-                v-model="form.payroll_setting_id"
-                type="hidden"
-              />
-              <p class="text-sm text-gray-600">
-                {{ setting ? `${formatPeriodType(setting.period_type)} — Pay days: ${setting.pay_day_1}${setting.pay_day_2 ? ' & ' + setting.pay_day_2 : ''}` : 'No setting configured' }}
-              </p>
-              <p v-if="form.errors.payroll_setting_id" class="mt-1 text-xs text-red-600">
-                {{ form.errors.payroll_setting_id }}
-              </p>
-            </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">
+              Pay Date <span class="font-normal text-gray-400">(adjust for holidays/weekends)</span>
+            </label>
+            <input
+              v-model="form.pay_date"
+              type="date"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+            <p v-if="form.errors.pay_date" class="mt-1 text-xs text-red-600">{{ form.errors.pay_date }}</p>
+            <p v-if="form.errors.period" class="mt-1 text-xs text-red-600">{{ form.errors.period }}</p>
           </div>
+
           <div class="mt-6 flex justify-end gap-3">
             <button
               type="button"
-              @click="showCreateForm = false"
+              @click="showCreateForm = false; form.reset()"
               class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              :disabled="form.processing"
+              :disabled="form.processing || !nextPeriod"
               class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
             >
               <Loader2 v-if="form.processing" :size="16" class="animate-spin" />
@@ -118,14 +91,6 @@
           </div>
         </form>
       </div>
-    </div>
-
-    <!-- Flash Message -->
-    <div
-      v-if="$page.props.flash?.success"
-      class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
-    >
-      {{ $page.props.flash.success }}
     </div>
 
     <!-- Periods Table -->
@@ -201,6 +166,26 @@
                     <CheckCircle v-else :size="12" />
                     Finalize
                   </button>
+                  <button
+                    v-if="canRun && period.status === 'draft'"
+                    @click="cancelPeriod(period.id)"
+                    :disabled="cancellingId === period.id"
+                    class="flex items-center gap-1 rounded border border-red-300 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+                  >
+                    <Loader2 v-if="cancellingId === period.id" :size="12" class="animate-spin" />
+                    <X v-else :size="12" />
+                    Cancel
+                  </button>
+                  <button
+                    v-if="canRun && (period.status === 'draft' || period.status === 'cancelled')"
+                    @click="deletePeriod(period.id)"
+                    :disabled="deletingId === period.id"
+                    class="flex items-center gap-1 rounded border border-red-300 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
+                  >
+                    <Loader2 v-if="deletingId === period.id" :size="12" class="animate-spin" />
+                    <Trash2 v-else :size="12" />
+                    Delete
+                  </button>
                 </div>
               </td>
             </tr>
@@ -242,9 +227,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref, computed } from 'vue'
 import { Link, usePage, useForm, router } from '@inertiajs/vue3'
-import { Plus, Calendar, Play, CheckCircle, Loader2, AlertTriangle, ChevronLeft } from 'lucide-vue-next'
+import { Plus, Calendar, Play, CheckCircle, Loader2, AlertTriangle, ChevronLeft, X, Trash2 } from 'lucide-vue-next'
 import Layout from '@/components/Layout.vue'
 
 interface PayrollSetting {
@@ -271,9 +256,16 @@ interface PaginatedPeriods {
   links: { label: string; url: string | null; active: boolean }[]
 }
 
+interface NextPeriod {
+  start_date: string
+  end_date: string
+  pay_date: string
+}
+
 const props = defineProps<{
   periods: PaginatedPeriods
   setting: PayrollSetting | null
+  nextPeriod: NextPeriod | null
 }>()
 
 const page = usePage()
@@ -283,6 +275,8 @@ const canRun = computed(() => permissions.value.includes('payroll.run'))
 const showCreateForm = ref(false)
 const runningId = ref<number | null>(null)
 const finalizingId = ref<number | null>(null)
+const cancellingId = ref<number | null>(null)
+const deletingId = ref<number | null>(null)
 const perPage = ref<number>(props.periods.per_page ?? 5)
 
 const changePerPage = () => {
@@ -290,14 +284,15 @@ const changePerPage = () => {
 }
 
 const form = useForm({
-  start_date: '',
-  end_date: '',
   pay_date: '',
-  payroll_setting_id: props.setting?.id ?? null,
 })
 
+const openCreateForm = () => {
+  form.pay_date = props.nextPeriod?.pay_date ?? ''
+  showCreateForm.value = true
+}
+
 const submitCreate = () => {
-  form.payroll_setting_id = props.setting?.id ?? null
   form.post('/payroll/periods', {
     onSuccess: () => {
       showCreateForm.value = false
@@ -317,6 +312,22 @@ const finalizePeriod = (id: number) => {
   finalizingId.value = id
   router.post(`/payroll/periods/${id}/finalize`, {}, {
     onFinish: () => { finalizingId.value = null },
+  })
+}
+
+const cancelPeriod = (id: number) => {
+  if (!confirm('Cancel this payroll period? It will be marked as cancelled but kept for audit.')) { return }
+  cancellingId.value = id
+  router.post(`/payroll/periods/${id}/cancel`, {}, {
+    onFinish: () => { cancellingId.value = null },
+  })
+}
+
+const deletePeriod = (id: number) => {
+  if (!confirm('Permanently delete this payroll period? This cannot be undone.')) { return }
+  deletingId.value = id
+  router.delete(`/payroll/periods/${id}`, {
+    onFinish: () => { deletingId.value = null },
   })
 }
 

@@ -49,7 +49,7 @@ class TimekeepingSettingsTest extends TestCase
     public function test_settings_page_renders_with_props(): void
     {
         $this->actingAs($this->admin)
-            ->get('/hr-settings/leave-types')
+            ->get('/app-settings/leave-types')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('HRSettings/LeaveTypes')
@@ -66,20 +66,20 @@ class TimekeepingSettingsTest extends TestCase
     public function test_non_admin_cannot_access_settings(): void
     {
         $this->actingAs($this->nonAdmin)
-            ->get('/hr-settings/leave-types')
+            ->get('/app-settings/leave-types')
             ->assertForbidden();
     }
 
     public function test_unauthenticated_redirected_to_login(): void
     {
-        $this->get('/hr-settings/leave-types')->assertRedirect('/login');
+        $this->get('/app-settings/leave-types')->assertRedirect('/login');
     }
 
     public function test_toggle_leave_disables_leave(): void
     {
         $this->actingAs($this->admin)
-            ->patch('/hr-settings/timekeeping/toggle-leave')
-            ->assertRedirect('/hr-settings/leave-types');
+            ->patch('/app-settings/timekeeping/toggle-leave')
+            ->assertRedirect('/app-settings/leave-types');
 
         $this->assertFalse($this->company->fresh()->leave_enabled);
     }
@@ -89,8 +89,8 @@ class TimekeepingSettingsTest extends TestCase
         $this->company->update(['leave_enabled' => false]);
 
         $this->actingAs($this->admin)
-            ->patch('/hr-settings/timekeeping/toggle-leave')
-            ->assertRedirect('/hr-settings/leave-types');
+            ->patch('/app-settings/timekeeping/toggle-leave')
+            ->assertRedirect('/app-settings/leave-types');
 
         $this->assertTrue($this->company->fresh()->leave_enabled);
     }
@@ -98,8 +98,8 @@ class TimekeepingSettingsTest extends TestCase
     public function test_toggle_ot_disables_ot(): void
     {
         $this->actingAs($this->admin)
-            ->patch('/hr-settings/timekeeping/toggle-ot')
-            ->assertRedirect('/hr-settings/leave-types');
+            ->patch('/app-settings/timekeeping/toggle-ot')
+            ->assertRedirect('/app-settings/leave-types');
 
         $this->assertFalse($this->company->fresh()->ot_enabled);
     }
@@ -109,8 +109,8 @@ class TimekeepingSettingsTest extends TestCase
         $this->company->update(['ot_enabled' => false]);
 
         $this->actingAs($this->admin)
-            ->patch('/hr-settings/timekeeping/toggle-ot')
-            ->assertRedirect('/hr-settings/leave-types');
+            ->patch('/app-settings/timekeeping/toggle-ot')
+            ->assertRedirect('/app-settings/leave-types');
 
         $this->assertTrue($this->company->fresh()->ot_enabled);
     }
@@ -118,14 +118,14 @@ class TimekeepingSettingsTest extends TestCase
     public function test_non_admin_cannot_toggle_leave(): void
     {
         $this->actingAs($this->nonAdmin)
-            ->patch('/hr-settings/timekeeping/toggle-leave')
+            ->patch('/app-settings/timekeeping/toggle-leave')
             ->assertForbidden();
     }
 
     public function test_non_admin_cannot_toggle_ot(): void
     {
         $this->actingAs($this->nonAdmin)
-            ->patch('/hr-settings/timekeeping/toggle-ot')
+            ->patch('/app-settings/timekeeping/toggle-ot')
             ->assertForbidden();
     }
 
@@ -134,13 +134,13 @@ class TimekeepingSettingsTest extends TestCase
         $role = Role::firstOrCreate(['slug' => 'manager'], ['name' => 'Manager', 'slug' => 'manager', 'is_system' => true]);
 
         $this->actingAs($this->admin)
-            ->post('/hr-settings/timekeeping/approval-chain', [
+            ->post('/app-settings/timekeeping/approval-chain', [
                 'type' => 'leave',
                 'steps' => [
                     ['order' => 1, 'role_id' => $role->id],
                 ],
             ])
-            ->assertRedirect('/hr-settings/leave-types');
+            ->assertRedirect('/app-settings/leave-types');
 
         $this->assertDatabaseHas('timekeeping_approval_settings', [
             'company_id' => $this->company->id,
@@ -162,7 +162,7 @@ class TimekeepingSettingsTest extends TestCase
         $admin = Role::firstOrCreate(['slug' => 'admin'], ['name' => 'Admin', 'slug' => 'admin', 'is_system' => true]);
 
         $this->actingAs($this->admin)
-            ->post('/hr-settings/timekeeping/approval-chain', [
+            ->post('/app-settings/timekeeping/approval-chain', [
                 'type' => 'ot',
                 'steps' => [
                     ['order' => 1, 'role_id' => $manager->id],
@@ -170,7 +170,7 @@ class TimekeepingSettingsTest extends TestCase
                     ['order' => 3, 'role_id' => $admin->id],
                 ],
             ])
-            ->assertRedirect('/hr-settings/leave-types');
+            ->assertRedirect('/app-settings/leave-types');
 
         $setting = TimekeepingApprovalSetting::where('company_id', $this->company->id)
             ->where('type', 'ot')
@@ -191,7 +191,7 @@ class TimekeepingSettingsTest extends TestCase
         ]);
 
         $this->actingAs($this->admin)
-            ->post('/hr-settings/timekeeping/approval-chain', [
+            ->post('/app-settings/timekeeping/approval-chain', [
                 'type' => 'leave',
                 'steps' => [
                     ['order' => 1, 'role_id' => $manager->id],
@@ -213,7 +213,7 @@ class TimekeepingSettingsTest extends TestCase
         $role = Role::firstOrCreate(['slug' => 'manager'], ['name' => 'Manager', 'slug' => 'manager', 'is_system' => true]);
 
         $this->actingAs($this->admin)
-            ->post('/hr-settings/timekeeping/approval-chain', [
+            ->post('/app-settings/timekeeping/approval-chain', [
                 'type' => 'leave',
                 'steps' => [
                     ['order' => 1, 'role_id' => $role->id],
@@ -228,7 +228,7 @@ class TimekeepingSettingsTest extends TestCase
     public function test_approval_chain_rejects_invalid_role(): void
     {
         $this->actingAs($this->admin)
-            ->post('/hr-settings/timekeeping/approval-chain', [
+            ->post('/app-settings/timekeeping/approval-chain', [
                 'type' => 'leave',
                 'steps' => [
                     ['order' => 1, 'role_id' => 99999],

@@ -20,7 +20,7 @@ class PayslipController extends Controller
             'period.setting',
             'employee.company',
             'employee.department:id,name',
-            'employee.position:id,name',
+            'employee.position:id,position_name',
             'earnings',
             'deductions',
         ]);
@@ -38,7 +38,7 @@ class PayslipController extends Controller
             'period.setting',
             'employee.company',
             'employee.department:id,name',
-            'employee.position:id,name',
+            'employee.position:id,position_name',
             'earnings',
             'deductions',
         ]);

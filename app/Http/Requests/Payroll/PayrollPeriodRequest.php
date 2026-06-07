@@ -14,23 +14,15 @@ class PayrollPeriodRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'payroll_setting_id' => ['required', 'exists:payroll_settings,id'],
-            'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
-            'pay_date' => ['required', 'date', 'after_or_equal:end_date'],
+            'pay_date' => ['required', 'date'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'payroll_setting_id.required' => 'Please select a payroll setting.',
-            'payroll_setting_id.exists' => 'The selected payroll setting is invalid.',
-            'start_date.required' => 'Please enter a start date.',
-            'end_date.required' => 'Please enter an end date.',
-            'end_date.after_or_equal' => 'End date must be on or after the start date.',
             'pay_date.required' => 'Please enter a pay date.',
-            'pay_date.after_or_equal' => 'Pay date must be on or after the end date.',
+            'pay_date.date' => 'Pay date must be a valid date.',
         ];
     }
 }

@@ -7,18 +7,21 @@ use App\Http\Requests\Payroll\PayrollPeriodRequest;
 use App\Jobs\ProcessPayrollJob;
 use App\Modules\Payroll\Models\PayrollPeriod;
 use App\Modules\Payroll\Models\PayrollSetting;
+use App\Modules\Payroll\Services\PayrollPeriodService;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class PayrollPeriodController extends Controller
 {
+    public function __construct(private readonly PayrollPeriodService $periodService) {}
+
     public function index(): Response
     {
         $this->authorize('viewAny', PayrollPeriod::class);
 
         $companyId = request()->user()->employee?->company_id;
-
         $perPage = max(5, min(100, (int) request()->input('per_page', 5)));
 
         $periods = PayrollPeriod::with(['processedBy:id,name'])
@@ -28,30 +31,79 @@ class PayrollPeriodController extends Controller
 
         $setting = PayrollSetting::where('company_id', $companyId)->first();
 
+        // Compute the next period dates so the frontend can display them locked
+        $nextPeriod = null;
+
+        if ($setting) {
+            $lastPeriod = PayrollPeriod::where('company_id', $companyId)
+                ->whereNotIn('status', ['cancelled'])
+                ->orderBy('end_date', 'desc')
+                ->first();
+
+            $referenceDate = $lastPeriod
+                ? Carbon::parse($lastPeriod->end_date)->addDay()
+                : Carbon::now();
+
+            $generated = $this->periodService->generateNextPeriod($setting, $referenceDate);
+
+            $nextPeriod = [
+                'start_date' => $generated['start_date']->toDateString(),
+                'end_date' => $generated['end_date']->toDateString(),
+                'pay_date' => $generated['pay_date']->toDateString(),
+            ];
+        }
+
         return Inertia::render('Payroll/Periods', [
             'periods' => $periods,
             'setting' => $setting,
+            'nextPeriod' => $nextPeriod,
         ]);
     }
 
     public function store(PayrollPeriodRequest $request): RedirectResponse
     {
         $companyId = $request->user()->employee?->company_id;
-        $validated = $request->validated();
+        $setting = PayrollSetting::where('company_id', $companyId)->firstOrFail();
 
-        // Auto-calculate cutoff dates if not explicitly provided
-        if (empty($validated['cutoff_start_date']) || empty($validated['cutoff_end_date'])) {
-            $setting = PayrollSetting::where('company_id', $companyId)->first();
-            $offsetDays = $setting?->cutoff_offset_days ?? 15;
-            $startDate = \Carbon\Carbon::parse($validated['start_date']);
-            $validated['cutoff_end_date'] = $startDate->copy()->subDays(1)->toDateString();
-            $validated['cutoff_start_date'] = $startDate->copy()->subDays($offsetDays)->toDateString();
+        $lastPeriod = PayrollPeriod::where('company_id', $companyId)
+            ->whereNotIn('status', ['cancelled'])
+            ->orderBy('end_date', 'desc')
+            ->first();
+
+        $referenceDate = $lastPeriod
+            ? Carbon::parse($lastPeriod->end_date)->addDay()
+            : Carbon::now();
+
+        $generated = $this->periodService->generateNextPeriod($setting, $referenceDate);
+
+        $startDate = $generated['start_date'];
+        $endDate = $generated['end_date'];
+
+        // Safety check: reject if the generated period already exists
+        $overlap = PayrollPeriod::where('company_id', $companyId)
+            ->whereNotIn('status', ['cancelled'])
+            ->where('start_date', '<=', $endDate->toDateString())
+            ->where('end_date', '>=', $startDate->toDateString())
+            ->exists();
+
+        if ($overlap) {
+            return redirect()->back()->withErrors([
+                'period' => 'A payroll period already exists for these dates.',
+            ]);
         }
 
-        PayrollPeriod::create(array_merge($validated, [
+        $offsetDays = $setting->cutoff_offset_days ?? 15;
+
+        PayrollPeriod::create([
             'company_id' => $companyId,
+            'payroll_setting_id' => $setting->id,
+            'start_date' => $startDate->toDateString(),
+            'end_date' => $endDate->toDateString(),
+            'pay_date' => $request->validated()['pay_date'],
+            'cutoff_start_date' => $startDate->copy()->subDays($offsetDays)->toDateString(),
+            'cutoff_end_date' => $startDate->copy()->subDays(1)->toDateString(),
             'status' => 'draft',
-        ]));
+        ]);
 
         return redirect()->back()->with('success', 'Payroll period created.');
     }
@@ -95,5 +147,25 @@ class PayrollPeriodController extends Controller
         $payrollPeriod->update(['status' => 'finalized']);
 
         return redirect()->back()->with('success', 'Payroll period finalized.');
+    }
+
+    public function cancel(PayrollPeriod $payrollPeriod): RedirectResponse
+    {
+        $this->authorize('cancel', $payrollPeriod);
+
+        $payrollPeriod->update(['status' => 'cancelled']);
+
+        return redirect()->back()->with('success', 'Payroll period cancelled.');
+    }
+
+    public function destroy(PayrollPeriod $payrollPeriod): RedirectResponse
+    {
+        $this->authorize('deletePeriod', $payrollPeriod);
+
+        $payrollPeriod->items()->each(fn ($item) => $item->earnings()->delete() || $item->deductions()->delete());
+        $payrollPeriod->items()->delete();
+        $payrollPeriod->delete();
+
+        return redirect()->route('payroll.periods.index')->with('success', 'Payroll period deleted.');
     }
 }
