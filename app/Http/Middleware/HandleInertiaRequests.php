@@ -48,6 +48,22 @@ class HandleInertiaRequests extends Middleware
         $loansEnabled = true;
         $leaveEnabled = true;
         $otEnabled = true;
+        $swapEnabled = false;
+        $branding = ['name' => null, 'logoLogin' => null, 'logoNav' => null, 'favicon' => null];
+
+        // For unauthenticated pages (login) load the first active company for branding
+        $company = $request->user()
+            ? Company::find($request->user()->company_id)
+            : Company::where('is_active', true)->first();
+
+        if ($company) {
+            $branding = [
+                'name' => $company->name,
+                'logoLogin' => $company->logo_login ? asset('storage/'.$company->logo_login) : null,
+                'logoNav' => $company->logo_nav ? asset('storage/'.$company->logo_nav) : null,
+                'favicon' => $company->favicon ? asset('storage/'.$company->favicon) : null,
+            ];
+        }
 
         if ($request->user() && $request->user()->company_id) {
             $companyId = $request->user()->company_id;
@@ -56,6 +72,7 @@ class HandleInertiaRequests extends Middleware
             $loansEnabled = (bool) ($company?->loans_enabled ?? true);
             $leaveEnabled = (bool) ($company?->leave_enabled ?? true);
             $otEnabled = (bool) ($company?->ot_enabled ?? true);
+            $swapEnabled = (bool) ($company?->swap_enabled ?? false);
 
             // Get all active modules from database
             $allModules = \App\Modules\Core\Models\Module::where('is_active', true)
@@ -109,6 +126,8 @@ class HandleInertiaRequests extends Middleware
             'loansEnabled' => $loansEnabled,
             'leaveEnabled' => $leaveEnabled,
             'otEnabled' => $otEnabled,
+            'swapEnabled' => $swapEnabled,
+            'branding' => $branding,
         ];
     }
 }

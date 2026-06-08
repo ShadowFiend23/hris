@@ -40,6 +40,10 @@ class Company extends Model
         'loans_enabled',
         'leave_enabled',
         'ot_enabled',
+        'swap_enabled',
+        'logo_login',
+        'logo_nav',
+        'favicon',
     ];
 
     protected function casts(): array
@@ -49,6 +53,7 @@ class Company extends Model
             'loans_enabled' => 'boolean',
             'leave_enabled' => 'boolean',
             'ot_enabled' => 'boolean',
+            'swap_enabled' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',

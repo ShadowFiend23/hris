@@ -171,6 +171,50 @@
     }
 }
 
+/* v-calendar popover above modals */
+.vc-popover-content-wrapper {
+    z-index: 9999 !important;
+}
+
+/* v-calendar dark mode overrides */
+.vc-dark {
+    --vc-bg: hsl(0 0% 14.9%);
+    --vc-border: hsl(0 0% 25%);
+    --vc-color: hsl(0 0% 98%);
+    --vc-header-title-color: hsl(0 0% 98%);
+    --vc-weekday-color: hsl(0 0% 63.9%);
+    --vc-nav-title-color: hsl(0 0% 98%);
+    --vc-nav-hover-bg: hsl(0 0% 22%);
+    --vc-focus-ring: 0 0 0 2px hsl(217.2 91.2% 59.8%);
+    --vc-day-content-hover-bg: hsl(0 0% 22%);
+    --vc-day-content-disabled-color: hsl(0 0% 40%);
+    --vc-highlight-solid-bg: hsl(217.2 91.2% 59.8%);
+    --vc-highlight-light-bg: hsl(217.2 91.2% 20%);
+    --vc-highlight-outline-border: hsl(217.2 91.2% 59.8%);
+    --vc-popover-caret-bg: hsl(0 0% 14.9%);
+}
+
+/* Docs step numbers */
+.step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 9999px;
+    background-color: #dbeafe;
+    color: #1d4ed8;
+    font-size: 0.65rem;
+    font-weight: 700;
+    margin-right: 0.4rem;
+    flex-shrink: 0;
+}
+
+.dark .step {
+    background-color: rgba(30, 64, 175, 0.3);
+    color: #93c5fd;
+}
+
 /* Notivue full-width override */
 :root {
     --nv-root-left: 0px;

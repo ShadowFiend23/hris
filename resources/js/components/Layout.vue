@@ -1,4 +1,7 @@
 ﻿<template>
+  <Head v-if="favicon">
+    <link rel="icon" :href="favicon" />
+  </Head>
   <div class="flex h-screen bg-gray-50">
     <!-- Sidebar -->
     <div
@@ -10,13 +13,18 @@
       <div class="flex flex-col h-full">
         <!-- Logo Section -->
         <div class="flex items-center gap-2 px-6 py-4 border-b border-gray-200">
-          <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center text-white font-bold">
-            HR
-          </div>
-          <div class="flex-1">
-            <div class="text-sm font-semibold text-gray-900">HR Core</div>
-            <div class="text-xs text-gray-500">Management System</div>
-          </div>
+          <template v-if="logoNav">
+            <img :src="logoNav" alt="Company logo" class="h-8 max-w-36 object-contain" />
+          </template>
+          <template v-else>
+            <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center text-white font-bold shrink-0">
+              HR
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-semibold text-gray-900 truncate">{{ branding.name || 'HR Core' }}</div>
+              <div class="text-xs text-gray-500">Management System</div>
+            </div>
+          </template>
         </div>
 
         <!-- Navigation -->
@@ -193,13 +201,14 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { Link, router, usePage } from '@inertiajs/vue3'
+import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { Notification, NotificationProgress, Notivue, NotivueSwipe, lightTheme, outlinedIcons, push } from 'notivue'
 import {
   AlertCircle,
   AlertTriangle,
   BarChart3,
   Bell,
+  BookOpen,
   CheckCircle2,
   Clock,
   CreditCard,
@@ -231,6 +240,10 @@ watch(
   },
   { deep: true },
 )
+
+const branding = computed(() => (page.props as any).branding ?? {})
+const logoNav = computed(() => branding.value.logoNav ?? null)
+const favicon = computed(() => branding.value.favicon ?? null)
 
 const isAdmin = computed(() => (page.props.auth as any)?.isAdmin === true)
 const isEmployee = computed(() => !(page.props.auth as any)?.isAdmin && !(page.props.auth as any)?.isManager)
@@ -318,8 +331,9 @@ const baseNavigationItems = [
   { label: 'Payroll', href: '/payroll', icon: PhilippinePeso, moduleCode: 'payroll' },
   { label: 'My Payslips', href: '/payroll/my-payslips', icon: FileText, moduleCode: 'payroll', employeeOnly: true },
   { label: 'Loans', href: '/loans', icon: CreditCard, moduleCode: 'payroll', activeOn: ['/loans'], loansOnly: true },
-  { label: 'App Settings', href: '/app-settings/leave-types', icon: Settings, moduleCode: 'timekeeping', adminOnly: true, activeOn: ['/app-settings'] },
-  { label: 'Licenses', href: '/license/licenses', icon: Lock, moduleCode: null },
+  { label: 'App Settings', href: '/app-settings/timekeeping-settings', icon: Settings, moduleCode: 'timekeeping', adminOnly: true, activeOn: ['/app-settings'] },
+  { label: 'License', href: '/license', icon: Lock, moduleCode: null },
+  { label: 'Help & Docs', href: '/docs', icon: BookOpen, moduleCode: 'hris' },
 ]
 
 const filteredNavigationItems = computed(() => {
@@ -330,7 +344,7 @@ const filteredNavigationItems = computed(() => {
   if (modules.length === 0) {
     return baseNavigationItems
       .filter(item => {
-        if (item.label === 'Licenses') return isAdmin.value
+        if (item.label === 'License') return isAdmin.value
         if ((item as any).adminOnly) return isAdmin.value
         if ((item as any).employeeOnly) return isEmployee.value
         if ((item as any).loansOnly && !loansEnabled) return false
@@ -344,7 +358,7 @@ const filteredNavigationItems = computed(() => {
   return baseNavigationItems.map(item => {
     if (!item.moduleCode) {
       // Licenses: admin only — hide entirely for non-admins
-      if (item.label === 'Licenses') {
+      if (item.label === 'License') {
         return { ...item, visible: isAdmin.value, enabled: isAdmin.value }
       }
       return { ...item, visible: true, enabled: true }

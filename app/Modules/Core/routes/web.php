@@ -2,8 +2,10 @@
 
 use App\Modules\Core\Controllers\DashboardController;
 use App\Modules\Core\Controllers\DepartmentController;
+use App\Modules\Core\Controllers\DocsController;
 use App\Modules\Core\Controllers\EmployeesController;
 use App\Modules\Core\Controllers\EmployeeSettingsController;
+use App\Modules\Core\Controllers\IdentitySettingsController;
 use App\Modules\Core\Controllers\NotificationsController;
 use App\Modules\Core\Controllers\PositionController;
 use Illuminate\Support\Facades\Route;
@@ -11,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 // Core HRIS routes - all require auth and hris module access
 Route::middleware(['auth', 'module.access:hris'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('home');
+    Route::get('/docs', [DocsController::class, 'index'])->name('docs');
 
     // Notifications (bell) — all roles
     Route::get('/api/core/notifications', [NotificationsController::class, 'index'])->name('notifications.index');
@@ -46,5 +49,11 @@ Route::middleware(['auth', 'module.access:hris'])->group(function () {
         Route::put('/positions/{position}', [PositionController::class, 'update'])->name('positions.update');
         Route::patch('/positions/{position}/toggle', [PositionController::class, 'toggle'])->name('positions.toggle');
         Route::delete('/positions/{position}', [PositionController::class, 'destroy'])->name('positions.destroy');
+
+        // Identity Settings (branding)
+        Route::get('/identity-settings', [IdentitySettingsController::class, 'index'])->name('identity-settings.index');
+        Route::patch('/identity-settings/name', [IdentitySettingsController::class, 'updateName'])->name('identity-settings.name');
+        Route::post('/identity-settings/{type}/upload', [IdentitySettingsController::class, 'uploadLogo'])->name('identity-settings.upload');
+        Route::delete('/identity-settings/{type}', [IdentitySettingsController::class, 'removeLogo'])->name('identity-settings.remove');
     });
 });

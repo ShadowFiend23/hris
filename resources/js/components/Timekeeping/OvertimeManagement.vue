@@ -41,7 +41,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
-            <input v-model="overtimeForm.date" type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            <DatePicker v-model="overtimeForm.date" />
           </div>
 
           <div>
@@ -148,6 +148,7 @@
 import { ref, onMounted } from 'vue'
 import { Loader2 } from 'lucide-vue-next'
 import { useTimekeeping, type OvertimeRecord } from '@/composables/useTimekeeping'
+import DatePicker from '@/components/ui/DatePicker.vue'
 
 const {
   submitOvertimeRequest,

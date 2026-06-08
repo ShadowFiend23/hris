@@ -16,7 +16,7 @@
           Employee Settings
         </Link>
         <Link
-          href="/app-settings/leave-types"
+          href="/app-settings/timekeeping-settings"
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Timekeeping Settings
@@ -50,6 +50,12 @@
           class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Contribution Settings
+        </Link>
+        <Link
+          href="/app-settings/identity-settings"
+          class="border-b-2 border-transparent pb-3 text-sm font-medium whitespace-nowrap text-gray-500 hover:text-gray-700"
+        >
+          Identity Settings
         </Link>
       </nav>
     </div>
@@ -95,12 +101,7 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="mb-1 block text-sm font-medium text-gray-700">Date</label>
-                <input
-                  v-model="form.date"
-                  type="date"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
+                <DatePicker v-model="form.date" :required="true" />
                 <p v-if="form.errors.date" class="mt-1 text-xs text-red-600">{{ form.errors.date }}</p>
               </div>
               <div>
@@ -301,6 +302,7 @@ import { computed, ref, watch } from 'vue'
 import { Link, usePage, useForm, router } from '@inertiajs/vue3'
 import { Plus, Loader2, AlertTriangle, Star } from 'lucide-vue-next'
 import Layout from '@/components/Layout.vue'
+import DatePicker from '@/components/ui/DatePicker.vue'
 
 interface Holiday {
   id: number

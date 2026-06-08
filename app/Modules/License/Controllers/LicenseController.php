@@ -5,27 +5,51 @@ namespace App\Modules\License\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Core\Models\License;
 use App\Modules\Core\Models\Module;
+use App\Modules\License\Services\HardwareFingerprint;
+use App\Modules\License\Services\LicenseFile;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class LicenseController extends Controller
 {
+    public function __construct(
+        private readonly LicenseFile $licenseFile,
+        private readonly HardwareFingerprint $fingerprint,
+    ) {}
+
     /**
-     * Display all licenses for the authenticated user's company
+     * Display the hardware license status and details.
      */
-    public function index()
+    public function index(): \Inertia\Response|\Illuminate\Http\RedirectResponse
     {
         $user = auth()->user();
         if (! $user || ! $user->company_id) {
             return redirect()->route('home');
         }
 
-        $licenses = License::where('company_id', $user->company_id)
-            ->with('modules')
-            ->paginate(10);
+        $licenseData = $this->licenseFile->read();
+
+        $status = null;
+        if ($licenseData !== null) {
+            if (! $this->licenseFile->verifySignature($licenseData)) {
+                $status = 'tampered';
+            } elseif (! $this->licenseFile->hardwareMatches($licenseData)) {
+                $status = 'wrong_machine';
+            } elseif ($this->licenseFile->isExpired($licenseData)) {
+                $status = 'expired';
+            } else {
+                $status = 'active';
+            }
+        }
 
         return Inertia::render('Licenses/Licenses', [
-            'licenses' => $licenses,
+            'licenseStatus' => $status,
+            'companyName' => $licenseData['company'] ?? null,
+            'licenseKey' => $licenseData['license_key'] ?? null,
+            'issuedAt' => $licenseData['issued_at'] ?? null,
+            'expiresAt' => $licenseData['expires_at'] ?? null,
+            'hardwareHash' => $this->fingerprint->generate(),
+            'hostname' => $this->fingerprint->getHostname(),
         ]);
     }
 

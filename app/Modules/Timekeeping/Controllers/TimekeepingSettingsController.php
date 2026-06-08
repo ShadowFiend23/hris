@@ -36,6 +36,10 @@ class TimekeepingSettingsController extends Controller
             ->where('type', 'ot')
             ->first();
 
+        $scheduleChangeApproval = TimekeepingApprovalSetting::where('company_id', $companyId)
+            ->where('type', 'schedule_change')
+            ->first();
+
         $roles = Role::orderBy('name')->get(['id', 'name', 'slug']);
 
         $shiftTemplates = ShiftTemplate::where('company_id', $companyId)
@@ -46,8 +50,10 @@ class TimekeepingSettingsController extends Controller
             'leaveTypes' => $leaveTypes,
             'leaveEnabled' => $company->leave_enabled,
             'otEnabled' => $company->ot_enabled,
+            'swapEnabled' => $company->swap_enabled,
             'leaveApprovalSteps' => $leaveApproval?->steps ?? [],
             'otApprovalSteps' => $otApproval?->steps ?? [],
+            'scheduleChangeApprovalSteps' => $scheduleChangeApproval?->steps ?? [],
             'roles' => $roles,
             'shiftTemplates' => $shiftTemplates,
         ]);
@@ -83,6 +89,22 @@ class TimekeepingSettingsController extends Controller
             ->with('success', "Overtime has been {$status}.");
     }
 
+    public function toggleSwapGlobal(Request $request): RedirectResponse
+    {
+        if (! $request->user()->hasRole('admin')) {
+            abort(403);
+        }
+
+        $company = Company::findOrFail($request->user()->company_id);
+        $company->update(['swap_enabled' => ! $company->swap_enabled]);
+
+        $status = $company->swap_enabled ? 'enabled' : 'disabled';
+
+        return redirect()->route('app-settings.timekeeping.index')
+            ->with('success', "Shift swap has been {$status}.")
+            ->with('sub', 'shifts');
+    }
+
     public function saveApprovalChain(Request $request): RedirectResponse
     {
         if (! $request->user()->hasRole('admin')) {
@@ -90,7 +112,7 @@ class TimekeepingSettingsController extends Controller
         }
 
         $request->validate([
-            'type' => ['required', 'in:leave,ot'],
+            'type' => ['required', 'in:leave,ot,schedule_change'],
             'steps' => ['required', 'array', 'min:1', 'max:3'],
             'steps.*.order' => ['required', 'integer', 'min:1', 'max:3'],
             'steps.*.role_id' => ['required', 'integer', 'exists:roles,id'],
@@ -103,7 +125,12 @@ class TimekeepingSettingsController extends Controller
             ['steps' => $request->steps]
         );
 
-        $label = $request->type === 'leave' ? 'Leave' : 'Overtime';
+        $label = match ($request->type) {
+            'leave' => 'Leave',
+            'ot' => 'Overtime',
+            'schedule_change' => 'Schedule Change',
+            default => ucfirst($request->type),
+        };
 
         return redirect()->route('app-settings.timekeeping.index')
             ->with('success', "{$label} approval chain saved.");

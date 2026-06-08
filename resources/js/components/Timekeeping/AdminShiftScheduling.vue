@@ -34,12 +34,7 @@
 
           <div>
             <label class="mb-1.5 block text-sm font-medium text-gray-700">Date</label>
-            <input
-              v-model="assignForm.date"
-              type="date"
-              required
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <DatePicker v-model="assignForm.date" :required="true" />
           </div>
         </div>
 
@@ -128,6 +123,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import DatePicker from '@/components/ui/DatePicker.vue'
 
 interface Employee { id: number; name: string }
 interface ShiftTemplate { id: number; name: string; start_time: string; end_time: string; duration_hours: number }

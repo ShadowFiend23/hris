@@ -62,12 +62,7 @@
             <label class="mb-1 block text-sm font-medium text-gray-700">
               Pay Date <span class="font-normal text-gray-400">(adjust for holidays/weekends)</span>
             </label>
-            <input
-              v-model="form.pay_date"
-              type="date"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
+            <DatePicker v-model="form.pay_date" :required="true" />
             <p v-if="form.errors.pay_date" class="mt-1 text-xs text-red-600">{{ form.errors.pay_date }}</p>
             <p v-if="form.errors.period" class="mt-1 text-xs text-red-600">{{ form.errors.period }}</p>
           </div>
@@ -231,6 +226,7 @@ import { ref, computed } from 'vue'
 import { Link, usePage, useForm, router } from '@inertiajs/vue3'
 import { Plus, Calendar, Play, CheckCircle, Loader2, AlertTriangle, ChevronLeft, X, Trash2 } from 'lucide-vue-next'
 import Layout from '@/components/Layout.vue'
+import DatePicker from '@/components/ui/DatePicker.vue'
 
 interface PayrollSetting {
   id: number

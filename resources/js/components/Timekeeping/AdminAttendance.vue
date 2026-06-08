@@ -8,13 +8,7 @@
       </div>
       <div class="flex items-center gap-2">
         <button @click="prevDay" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 hover:bg-gray-50" title="Previous day">&laquo;</button>
-        <input
-          v-model="selectedDate"
-          type="date"
-          :max="today"
-          @change="load"
-          class="rounded border border-gray-300 px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <DatePicker v-model="selectedDate" :max-date="today" @change="load" />
         <button @click="nextDay" :disabled="selectedDate >= today" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300" title="Next day">&raquo;</button>
         <button @click="load" class="text-sm text-blue-600 hover:underline ml-1">Refresh</button>
       </div>
@@ -140,6 +134,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import AdjustAttendanceModal from './AdjustAttendanceModal.vue'
+import DatePicker from '@/components/ui/DatePicker.vue'
 
 interface AttendanceEmployee {
   employee_id: number

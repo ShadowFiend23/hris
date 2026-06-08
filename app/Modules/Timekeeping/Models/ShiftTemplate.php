@@ -32,6 +32,7 @@ class ShiftTemplate extends Model
         'break_end_time',
         'work_days',
         'is_active',
+        'swap_enabled',
     ];
 
     protected function casts(): array
@@ -44,6 +45,7 @@ class ShiftTemplate extends Model
             'break_duration' => 'integer',
             'work_days' => 'array',
             'is_active' => 'boolean',
+            'swap_enabled' => 'boolean',
         ];
     }
 
@@ -61,6 +63,11 @@ class ShiftTemplate extends Model
     public function employeeSchedules(): HasMany
     {
         return $this->hasMany(EmployeeSchedule::class);
+    }
+
+    public function scheduleChangeRequests(): HasMany
+    {
+        return $this->hasMany(ScheduleChangeRequest::class, 'requested_shift_template_id');
     }
 
     // Scopes

@@ -142,23 +142,14 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="mb-1 block text-sm font-medium text-gray-700">Start Date</label>
-                <input
-                  v-model="form.start_date"
-                  type="date"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
+                <DatePicker v-model="form.start_date" :required="true" />
                 <p v-if="form.errors.start_date" class="mt-1 text-xs text-red-600">{{ form.errors.start_date }}</p>
               </div>
               <div>
                 <label class="mb-1 block text-sm font-medium text-gray-700">
                   End Date <span class="font-normal text-gray-500">(optional)</span>
                 </label>
-                <input
-                  v-model="form.end_date"
-                  type="date"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <DatePicker v-model="form.end_date" />
                 <p v-if="form.errors.end_date" class="mt-1 text-xs text-red-600">{{ form.errors.end_date }}</p>
               </div>
             </div>
@@ -448,6 +439,7 @@ import { ref, watch, computed, onMounted } from 'vue'
 import { Link, useForm, router } from '@inertiajs/vue3'
 import { Plus, Loader2, AlertTriangle, CreditCard, Search, X } from 'lucide-vue-next'
 import Layout from '@/components/Layout.vue'
+import DatePicker from '@/components/ui/DatePicker.vue'
 
 interface Employee {
   id: number

@@ -468,11 +468,20 @@ The app uses a module-based structure inside `app/Modules/`. Each module is self
 - Attendance splits the day: `clock_in → morning_out → afternoon_in → clock_out`.
 - Biometric data syncs via the Alpeta terminal integration (`BiometricTerminal`, `AlpetaLog`).
 
+## Shift Templates & Scheduling
+- `ShiftTemplate` — defines a recurring work schedule (start/end times, break window, work_days). Has two toggle flags:
+  - `is_active` — whether the template is available for assignment.
+  - `swap_enabled` — whether employees on this shift can file shift swap requests with peers (future feature; currently stored, toggle exists in settings UI).
+- `EmployeeSchedule` — links an employee to a specific shift template on a specific date. Created/updated when a schedule change request is approved.
+- **Schedule Change Requests** — employees file a one-day schedule change: pick a date, a different `ShiftTemplate`, and provide a reason. Goes through an approval chain stored in `TimekeepingApprovalSetting` (type = `'schedule_change'`). On approval, an `EmployeeSchedule` record is created or updated for that date.
+- Schedule change request lifecycle: `pending → approved` (creates `EmployeeSchedule`) or `pending → rejected` (with rejection_reason) or `pending → cancelled` (by employee).
+
 ## Important Models & Relationships
 - `Employee` → belongs to `Company`, `Department`, `Position`; has many `AttendanceRecord`, `LeaveRequest`, `PayrollItem`, `EmployeeAllowance`, `Loan`
 - `AttendanceRecord` → belongs to `Employee`; tracks `clock_in`, `morning_out`, `afternoon_in`, `clock_out`, `total_hours`, `status`
 - `PayrollPeriod` → has many `PayrollItem` → each has `PayrollEarning[]` and `PayrollDeduction[]`
-- `ShiftTemplate` → defines work hours and break times; assigned to employees via `EmployeeSchedule`
+- `ShiftTemplate` → defines work hours and break times; has `swap_enabled` toggle; assigned to employees via `EmployeeSchedule`
+- `ScheduleChangeRequest` → employee requests a one-day shift change; belongs to `Employee`, `ShiftTemplate` (requested); on approval, creates/updates `EmployeeSchedule`
 - `Role` ↔ `Permission` (many-to-many); `User` ↔ `Role` (many-to-many)
 
 ## Frontend Conventions
@@ -576,6 +585,51 @@ watch(xxxSearch, () => { xxxPage.value = 1 })
 |---|---|---|
 | Settings / config tables | `5` | `[5, 10, 25, 50]` |
 | Report tables | `10` | `[10, 25, 50]` |
+
+## Date Picker Convention
+
+This project uses **v-calendar** (`v-calendar@^3.1.2`) for all date inputs. **Never use `<input type="date">`** — always use the `DatePicker` wrapper component.
+
+### Setup (already wired)
+- Plugin registered globally in `app.ts` via `app.use(VCalendar, {})`
+- CSS imported in `app.ts`: `import 'v-calendar/style.css'`
+- Dark mode CSS overrides and z-index fix in `app.css`
+
+### Usage
+
+```vue
+import DatePicker from '@/components/ui/DatePicker.vue'
+
+<!-- Basic -->
+<DatePicker v-model="form.date" />
+
+<!-- With constraints -->
+<DatePicker v-model="form.date" :min-date="startDate" :max-date="today" />
+
+<!-- With validation error state -->
+<DatePicker v-model="form.date" :error="!!form.errors.date" />
+
+<!-- Disabled + required -->
+<DatePicker v-model="form.date" :disabled="isSubmitting" :required="true" />
+
+<!-- With change handler (e.g. triggering a reload) -->
+<DatePicker v-model="selectedDate" @change="loadData" />
+```
+
+### Props
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `modelValue` | `string \| null` | `null` | Date string in `YYYY-MM-DD` format |
+| `disabled` | `boolean` | `false` | Disables the picker |
+| `minDate` | `string` | — | Minimum selectable date (YYYY-MM-DD) |
+| `maxDate` | `string` | — | Maximum selectable date (YYYY-MM-DD) |
+| `required` | `boolean` | `false` | Prevents clearing once a date is set |
+| `error` | `boolean` | `false` | Applies red border for validation errors |
+| `placeholder` | `string` | `'Select a date'` | Input placeholder text |
+
+### Events
+- `update:modelValue` — emits `YYYY-MM-DD` string (used by `v-model`)
+- `change` — emits `YYYY-MM-DD` string whenever the selected date changes
 
 ## Toast Notifications (Notivue)
 

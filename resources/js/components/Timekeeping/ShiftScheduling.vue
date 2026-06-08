@@ -58,7 +58,7 @@
     </div>
 
     <!-- Shift Swap Requests -->
-    <div class="bg-white rounded-lg border border-gray-200 p-6">
+    <div v-if="swapEnabled" class="bg-white rounded-lg border border-gray-200 p-6">
       <h3 class="text-lg font-semibold text-gray-900 mb-6">Shift Swap Requests</h3>
 
       <!-- Loading State -->
@@ -96,7 +96,7 @@
     </div>
 
     <!-- Request Shift Swap -->
-    <div class="bg-white rounded-lg border border-gray-200 p-6">
+    <div v-if="swapEnabled" class="bg-white rounded-lg border border-gray-200 p-6">
       <h3 class="text-lg font-semibold text-gray-900 mb-6">Request Shift Swap</h3>
 
       <form @submit.prevent="handleSubmitSwap" class="space-y-4">
@@ -154,7 +154,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-vue-next'
+import { usePage } from '@inertiajs/vue3'
 import { useTimekeeping, type EmployeeSchedule } from '@/composables/useTimekeeping'
+
+const page = usePage()
+const swapEnabled = computed(() => !!(page.props as any).swapEnabled)
 
 interface ShiftSwapRequest {
   id: number

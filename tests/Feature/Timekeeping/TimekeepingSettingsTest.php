@@ -49,7 +49,7 @@ class TimekeepingSettingsTest extends TestCase
     public function test_settings_page_renders_with_props(): void
     {
         $this->actingAs($this->admin)
-            ->get('/app-settings/leave-types')
+            ->get('/app-settings/timekeeping-settings')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('HRSettings/LeaveTypes')
@@ -66,20 +66,20 @@ class TimekeepingSettingsTest extends TestCase
     public function test_non_admin_cannot_access_settings(): void
     {
         $this->actingAs($this->nonAdmin)
-            ->get('/app-settings/leave-types')
+            ->get('/app-settings/timekeeping-settings')
             ->assertForbidden();
     }
 
     public function test_unauthenticated_redirected_to_login(): void
     {
-        $this->get('/app-settings/leave-types')->assertRedirect('/login');
+        $this->get('/app-settings/timekeeping-settings')->assertRedirect('/login');
     }
 
     public function test_toggle_leave_disables_leave(): void
     {
         $this->actingAs($this->admin)
             ->patch('/app-settings/timekeeping/toggle-leave')
-            ->assertRedirect('/app-settings/leave-types');
+            ->assertRedirect('/app-settings/timekeeping-settings');
 
         $this->assertFalse($this->company->fresh()->leave_enabled);
     }
@@ -90,7 +90,7 @@ class TimekeepingSettingsTest extends TestCase
 
         $this->actingAs($this->admin)
             ->patch('/app-settings/timekeeping/toggle-leave')
-            ->assertRedirect('/app-settings/leave-types');
+            ->assertRedirect('/app-settings/timekeeping-settings');
 
         $this->assertTrue($this->company->fresh()->leave_enabled);
     }
@@ -99,7 +99,7 @@ class TimekeepingSettingsTest extends TestCase
     {
         $this->actingAs($this->admin)
             ->patch('/app-settings/timekeeping/toggle-ot')
-            ->assertRedirect('/app-settings/leave-types');
+            ->assertRedirect('/app-settings/timekeeping-settings');
 
         $this->assertFalse($this->company->fresh()->ot_enabled);
     }
@@ -110,7 +110,7 @@ class TimekeepingSettingsTest extends TestCase
 
         $this->actingAs($this->admin)
             ->patch('/app-settings/timekeeping/toggle-ot')
-            ->assertRedirect('/app-settings/leave-types');
+            ->assertRedirect('/app-settings/timekeeping-settings');
 
         $this->assertTrue($this->company->fresh()->ot_enabled);
     }
@@ -140,7 +140,7 @@ class TimekeepingSettingsTest extends TestCase
                     ['order' => 1, 'role_id' => $role->id],
                 ],
             ])
-            ->assertRedirect('/app-settings/leave-types');
+            ->assertRedirect('/app-settings/timekeeping-settings');
 
         $this->assertDatabaseHas('timekeeping_approval_settings', [
             'company_id' => $this->company->id,
@@ -170,7 +170,7 @@ class TimekeepingSettingsTest extends TestCase
                     ['order' => 3, 'role_id' => $admin->id],
                 ],
             ])
-            ->assertRedirect('/app-settings/leave-types');
+            ->assertRedirect('/app-settings/timekeeping-settings');
 
         $setting = TimekeepingApprovalSetting::where('company_id', $this->company->id)
             ->where('type', 'ot')

@@ -41,19 +41,11 @@
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <div class="flex items-center gap-2">
             <label class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">From</label>
-            <input
-              v-model="filterFrom"
-              type="date"
-              class="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <DatePicker v-model="filterFrom" />
           </div>
           <div class="flex items-center gap-2">
             <label class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">To</label>
-            <input
-              v-model="filterTo"
-              type="date"
-              class="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <DatePicker v-model="filterTo" />
           </div>
           <button
             v-if="filterFrom || filterTo"
@@ -114,6 +106,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { Clock } from 'lucide-vue-next'
 import { useTimekeeping, type AttendanceRecord } from '@/composables/useTimekeeping'
+import DatePicker from '@/components/ui/DatePicker.vue'
 
 const {
   fetchTodayAttendance,

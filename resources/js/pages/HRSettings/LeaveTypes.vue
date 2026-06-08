@@ -12,7 +12,7 @@
         <Link href="/app-settings/employee-settings" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           Employee Settings
         </Link>
-        <Link href="/app-settings/leave-types" class="border-b-2 border-blue-600 pb-3 text-sm font-medium text-blue-600 dark:border-blue-400 dark:text-blue-400">
+        <Link href="/app-settings/timekeeping-settings" class="border-b-2 border-blue-600 pb-3 text-sm font-medium text-blue-600 dark:border-blue-400 dark:text-blue-400">
           Timekeeping Settings
         </Link>
         <Link href="/app-settings/payroll" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
@@ -29,6 +29,9 @@
         </Link>
         <Link href="/app-settings/contribution-settings" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           Contribution Settings
+        </Link>
+        <Link href="/app-settings/identity-settings" class="border-b-2 border-transparent pb-3 text-sm font-medium whitespace-nowrap text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          Identity Settings
         </Link>
       </nav>
     </div>
@@ -409,6 +412,84 @@
 
     <!-- ═══════════════════════════════════════ SHIFTS SECTION ═══ -->
     <div v-else-if="activeSubTab === 'shifts'">
+      <!-- Global Shift Swap Toggle -->
+      <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-semibold text-gray-900 dark:text-white">Enable Shift Swap</h3>
+            <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Allow employees to request shift swaps with peers. Per-shift eligibility can be configured in the templates below.</p>
+          </div>
+          <button
+            type="button"
+            :disabled="toggleSwapGlobalForm.processing"
+            class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-gray-800"
+            :class="props.swapEnabled ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'"
+            role="switch"
+            :aria-checked="props.swapEnabled"
+            @click="toggleSwapGlobalForm.patch(toggleSwapGlobalAction.url())"
+          >
+            <span class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" :class="props.swapEnabled ? 'translate-x-5' : 'translate-x-0'" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Schedule Change Approval Chain -->
+      <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <div class="mb-4">
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white">Schedule Change Approval Chain</h3>
+          <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Define how many approvals a one-day schedule change request requires and who approves at each step.</p>
+        </div>
+
+        <div class="mb-5">
+          <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Number of Approval Steps</label>
+          <div class="flex gap-2">
+            <button
+              v-for="n in [1, 2, 3]"
+              :key="n"
+              type="button"
+              class="h-9 w-9 rounded-lg border text-sm font-semibold transition-colors"
+              :class="scheduleChangeStepCount === n
+                ? 'border-blue-600 bg-blue-600 text-white'
+                : 'border-gray-300 bg-white text-gray-700 hover:border-blue-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300'"
+              @click="setScheduleChangeStepCount(n)"
+            >
+              {{ n }}
+            </button>
+          </div>
+        </div>
+
+        <div class="mb-5 space-y-3">
+          <div v-for="step in scheduleChangeStepCount" :key="step" class="flex items-center gap-3">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+              {{ step }}
+            </span>
+            <div class="flex-1">
+              <select
+                v-model="scheduleChangeSteps[step - 1]"
+                class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              >
+                <option :value="null" disabled>Select approver role</option>
+                <option v-for="role in props.roles" :key="role.id" :value="role.id">
+                  {{ role.name }}
+                </option>
+              </select>
+            </div>
+            <span class="text-xs text-gray-400 dark:text-gray-500">
+              {{ step === 1 ? '1st approval' : step === 2 ? '2nd approval' : '3rd approval' }}
+            </span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          :disabled="scheduleChangeChainForm.processing || !scheduleChangeChainValid"
+          class="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          @click="saveScheduleChangeChain"
+        >
+          {{ scheduleChangeChainForm.processing ? 'Saving...' : 'Save Approval Chain' }}
+        </button>
+      </div>
+
       <!-- Section header -->
       <div class="mb-3 flex items-center justify-between">
         <div>
@@ -466,6 +547,13 @@
             <input v-model="addShiftForm.break_end_time" type="time" class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
             <p v-if="addShiftForm.errors.break_end_time" class="mt-1 text-xs text-red-600">{{ addShiftForm.errors.break_end_time }}</p>
           </div>
+          <div class="flex items-center gap-3 md:col-span-3">
+            <label class="flex cursor-pointer items-center gap-2">
+              <input v-model="addShiftForm.swap_enabled" type="checkbox" class="rounded" />
+              <span class="text-sm text-gray-700 dark:text-gray-300">Enable Shift Swap</span>
+            </label>
+            <span class="text-xs text-gray-400 dark:text-gray-500">Allow employees assigned to this shift to request shift swaps with peers.</span>
+          </div>
           <div class="flex justify-end gap-3 md:col-span-3">
             <button type="button" class="px-4 py-2 font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white" @click="cancelAddShift">Cancel</button>
             <button type="submit" :disabled="addShiftForm.processing" class="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50">
@@ -485,16 +573,17 @@
               <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">End</th>
               <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Break</th>
               <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Break Window</th>
+              <th v-if="props.swapEnabled" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Shift Swap</th>
               <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Status</th>
               <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
             <tr v-if="props.shiftTemplates.length === 0">
-              <td colspan="7" class="px-6 py-12 text-center text-gray-400 dark:text-gray-500">No shift templates configured yet.</td>
+              <td :colspan="props.swapEnabled ? 8 : 7" class="px-6 py-12 text-center text-gray-400 dark:text-gray-500">No shift templates configured yet.</td>
             </tr>
             <tr v-else-if="filteredShifts.length === 0">
-              <td colspan="7" class="px-6 py-12 text-center text-gray-400 dark:text-gray-500">No shift templates match your search.</td>
+              <td :colspan="props.swapEnabled ? 8 : 7" class="px-6 py-12 text-center text-gray-400 dark:text-gray-500">No shift templates match your search.</td>
             </tr>
             <tr v-for="st in paginatedShifts" :key="st.id" class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50">
               <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
@@ -525,6 +614,24 @@
                   <span class="text-gray-400">–</span>
                   <input v-model="editShiftForm.break_end_time" type="time" class="w-28 rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
                 </div>
+              </td>
+              <td v-if="props.swapEnabled" class="px-6 py-4">
+                <button
+                  v-if="shiftEditingId !== st.id"
+                  type="button"
+                  class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 dark:focus:ring-offset-gray-800"
+                  :class="st.swap_enabled ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'"
+                  role="switch"
+                  :aria-checked="st.swap_enabled"
+                  :title="st.swap_enabled ? 'Disable shift swap' : 'Enable shift swap'"
+                  @click="toggleSwap(st)"
+                >
+                  <span class="pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" :class="st.swap_enabled ? 'translate-x-4' : 'translate-x-0'" />
+                </button>
+                <select v-else v-model="editShiftForm.swap_enabled" class="rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                  <option :value="true">Enabled</option>
+                  <option :value="false">Disabled</option>
+                </select>
               </td>
               <td class="px-6 py-4">
                 <span :class="st.is_active ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'" class="rounded-full px-2 py-0.5 text-xs font-medium">
@@ -616,12 +723,13 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Link, useForm, usePage } from '@inertiajs/vue3'
+import { Link, router, useForm } from '@inertiajs/vue3'
 import { AlertTriangle, CalendarDays, CheckCircle, Clock, LayoutGrid, Pencil, Plus, ToggleLeft, Trash2, X } from 'lucide-vue-next'
 import Layout from '@/components/Layout.vue'
 import {
   toggleLeave as toggleLeaveAction,
   toggleOt as toggleOtAction,
+  toggleSwapGlobal as toggleSwapGlobalAction,
   saveApprovalChain as saveApprovalChainAction,
 } from '@/actions/App/Modules/Timekeeping/Controllers/TimekeepingSettingsController'
 import {
@@ -633,6 +741,7 @@ import {
   store as shiftStore,
   update as shiftUpdate,
   destroy as shiftDestroy,
+  toggleSwap as shiftToggleSwapAction,
 } from '@/actions/App/Modules/Timekeeping/Controllers/ShiftTemplatesController'
 
 type SubTab = 'leave' | 'ot' | 'shifts'
@@ -656,6 +765,7 @@ interface ShiftTemplate {
   break_start_time: string | null
   break_end_time: string | null
   is_active: boolean
+  swap_enabled: boolean
 }
 
 interface Role {
@@ -673,13 +783,13 @@ const props = defineProps<{
   leaveTypes: LeaveTypeItem[]
   leaveEnabled: boolean
   otEnabled: boolean
+  swapEnabled: boolean
   leaveApprovalSteps: ApprovalStep[]
   otApprovalSteps: ApprovalStep[]
+  scheduleChangeApprovalSteps: ApprovalStep[]
   roles: Role[]
   shiftTemplates: ShiftTemplate[]
 }>()
-
-const page = usePage()
 
 // ─── Sub-tabs ─────────────────────────────────────────────────────────────────
 const urlParams = new URLSearchParams(window.location.search)
@@ -727,6 +837,7 @@ function setSubTab(tab: SubTab): void {
 // ─── Toggles ──────────────────────────────────────────────────────────────────
 const toggleLeaveForm = useForm({})
 const toggleOtForm = useForm({})
+const toggleSwapGlobalForm = useForm({})
 
 // ─── Leave Approval Chain ──────────────────────────────────────────────────────
 const leaveStepCount = ref(props.leaveApprovalSteps.length || 1)
@@ -774,6 +885,30 @@ function saveOtChain(): void {
     role_id: otSteps.value[i] as number,
   }))
   otChainForm.post(saveApprovalChainAction.url())
+}
+
+// ─── Schedule Change Approval Chain ───────────────────────────────────────────
+const scheduleChangeStepCount = ref(props.scheduleChangeApprovalSteps.length || 1)
+const scheduleChangeSteps = ref<(number | null)[]>(
+  Array.from({ length: 3 }, (_, i) => props.scheduleChangeApprovalSteps[i]?.role_id ?? null),
+)
+
+function setScheduleChangeStepCount(n: number): void {
+  scheduleChangeStepCount.value = n
+}
+
+const scheduleChangeChainValid = computed(() =>
+  Array.from({ length: scheduleChangeStepCount.value }, (_, i) => scheduleChangeSteps.value[i]).every(id => id !== null),
+)
+
+const scheduleChangeChainForm = useForm({ type: 'schedule_change', steps: [] as ApprovalStep[] })
+
+function saveScheduleChangeChain(): void {
+  scheduleChangeChainForm.steps = Array.from({ length: scheduleChangeStepCount.value }, (_, i) => ({
+    order: i + 1,
+    role_id: scheduleChangeSteps.value[i] as number,
+  }))
+  scheduleChangeChainForm.post(saveApprovalChainAction.url())
 }
 
 // ─── Leave Types CRUD ──────────────────────────────────────────────────────────
@@ -854,6 +989,7 @@ const addShiftForm = useForm({
   break_duration: null as number | null,
   break_start_time: '',
   break_end_time: '',
+  swap_enabled: false,
 })
 
 function cancelAddShift(): void {
@@ -880,6 +1016,7 @@ const editShiftForm = useForm({
   break_start_time: '',
   break_end_time: '',
   is_active: true,
+  swap_enabled: false,
 })
 
 function startShiftEdit(st: ShiftTemplate): void {
@@ -891,6 +1028,7 @@ function startShiftEdit(st: ShiftTemplate): void {
   editShiftForm.break_start_time = st.break_start_time ? st.break_start_time.substring(0, 5) : ''
   editShiftForm.break_end_time = st.break_end_time ? st.break_end_time.substring(0, 5) : ''
   editShiftForm.is_active = st.is_active
+  editShiftForm.swap_enabled = st.swap_enabled
 }
 
 function cancelShiftEdit(): void {
@@ -916,5 +1054,9 @@ function submitShiftDeactivate(): void {
   destroyShiftForm.delete(shiftDestroy.url(deactivatingShift.value.id), {
     onSuccess: () => { deactivatingShift.value = null },
   })
+}
+
+function toggleSwap(st: ShiftTemplate): void {
+  router.patch(shiftToggleSwapAction.url(st.id))
 }
 </script>

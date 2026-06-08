@@ -10,12 +10,13 @@
     <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
       <nav class="flex gap-6">
         <Link href="/app-settings/employee-settings" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Employee Settings</Link>
-        <Link href="/app-settings/leave-types" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Timekeeping Settings</Link>
+        <Link href="/app-settings/timekeeping-settings" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Timekeeping Settings</Link>
         <Link href="/app-settings/payroll" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Payroll Settings</Link>
         <Link href="/app-settings/allowance-types" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Allowance Settings</Link>
         <Link href="/app-settings/loan-types" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Loan Settings</Link>
         <Link href="/app-settings/holidays" class="border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Holidays</Link>
         <Link href="/app-settings/contribution-settings" class="border-b-2 border-blue-600 pb-3 text-sm font-medium text-blue-600 dark:border-blue-400 dark:text-blue-400">Contribution Settings</Link>
+        <Link href="/app-settings/identity-settings" class="border-b-2 border-transparent pb-3 text-sm font-medium whitespace-nowrap text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Identity Settings</Link>
       </nav>
     </div>
 

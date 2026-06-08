@@ -1,269 +1,224 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { usePage, Link, router } from '@inertiajs/vue3';
-import { useForm } from '@inertiajs/vue3';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-vue-next';
+import Layout from '@/components/Layout.vue';
+import { Link } from '@inertiajs/vue3';
+import { AlertTriangle, CheckCircle2, Clock, Cpu, Key, MonitorCheck, XCircle } from 'lucide-vue-next';
 
-const page = usePage();
-const licenses = computed(() => page.props.licenses?.data || []);
+const props = defineProps<{
+    licenseStatus: 'active' | 'expired' | 'tampered' | 'wrong_machine' | null;
+    companyName: string | null;
+    licenseKey: string | null;
+    issuedAt: string | null;
+    expiresAt: string | null;
+    hardwareHash: string;
+    hostname: string;
+}>();
 
-const perPage = ref(5);
-const currentPage = ref(1);
-const totalPages = computed(() => Math.ceil(licenses.value.length / perPage.value));
-const paginatedLicenses = computed(() => {
-  const start = (currentPage.value - 1) * perPage.value;
-  return licenses.value.slice(start, start + perPage.value);
-});
-const changePerPage = () => { currentPage.value = 1; };
+function formatDate(value: string | null): string {
+    if (!value) { return '—'; }
+    if (value === 'lifetime') { return 'Lifetime'; }
+    return new Date(value).toLocaleDateString('en-PH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    });
+}
 
-const showCreateForm = ref(false);
-const isSubmitting = ref(false);
+function daysRemaining(expiresAt: string | null): number | null {
+    if (!expiresAt || expiresAt === 'lifetime') { return null; }
+    return Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86_400_000);
+}
 
-const form = useForm({
-    license_key: '',
-    type: 'enterprise',
-    valid_from: new Date().toISOString().split('T')[0],
-    valid_until: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    user_limit: 100,
-    status: 'active',
-    notes: '',
-});
+const days = daysRemaining(props.expiresAt);
 
-const statusColor = (status: string) => {
-    switch (status) {
-        case 'active':
-            return 'bg-green-100 text-green-800';
-        case 'inactive':
-            return 'bg-gray-100 text-gray-800';
-        case 'expired':
-            return 'bg-red-100 text-red-800';
-        default:
-            return 'bg-gray-100 text-gray-800';
-    }
-};
+const statusConfig = {
+    active: {
+        icon: CheckCircle2,
+        label: 'Active',
+        iconClass: 'text-green-500',
+        badgeClass: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+        bannerClass: 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800',
+        message: 'Your license is valid and all features are unlocked.',
+    },
+    expired: {
+        icon: Clock,
+        label: 'Expired',
+        iconClass: 'text-red-500',
+        badgeClass: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+        bannerClass: 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800',
+        message: 'This license has expired. Please contact your vendor to renew.',
+    },
+    tampered: {
+        icon: XCircle,
+        label: 'Tampered',
+        iconClass: 'text-red-500',
+        badgeClass: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+        bannerClass: 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800',
+        message: 'The license file has been modified and is no longer valid.',
+    },
+    wrong_machine: {
+        icon: AlertTriangle,
+        label: 'Wrong Machine',
+        iconClass: 'text-orange-500',
+        badgeClass: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
+        bannerClass: 'bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800',
+        message: 'This license is bound to a different server. Re-activate on the correct machine.',
+    },
+} as const;
 
-const isExpiring = (validUntil: string) => {
-    const daysUntil = Math.ceil((new Date(validUntil).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-    return daysUntil <= 30 && daysUntil > 0;
-};
-
-const submitCreateLicense = async () => {
-    isSubmitting.value = true;
-    try {
-        await form.post('/license/licenses', {
-            onSuccess: () => {
-                showCreateForm.value = false;
-                form.reset();
-                router.visit('/license/licenses');
-            },
-            onError: () => {
-                isSubmitting.value = false;
-            },
-        });
-    } catch (error) {
-        isSubmitting.value = false;
-        console.error('Error creating license:', error);
-    }
-};
-
-const cancelCreateLicense = () => {
-    showCreateForm.value = false;
-    form.reset();
-};
+const config = props.licenseStatus ? statusConfig[props.licenseStatus] : null;
 </script>
 
 <template>
-    <div class="space-y-4">
-        <div class="flex justify-between items-center">
-            <h2 class="text-2xl font-bold">Licenses</h2>
-            <Button @click="showCreateForm = true" :disabled="showCreateForm">
-                <Plus :size="18" class="mr-2" />
-                Create License
-            </Button>
+    <Layout>
+        <!-- Header -->
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">License</h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Application license status and hardware binding</p>
         </div>
 
-        <!-- Create License Form -->
-        <div v-if="showCreateForm" class="bg-white p-6 border rounded-lg space-y-4">
-            <h3 class="text-lg font-semibold">Create New License</h3>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">License Key</label>
-                    <input
-                        v-model="form.license_key"
-                        type="text"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        :disabled="isSubmitting"
-                    />
-                    <p v-if="form.errors.license_key" class="text-red-600 text-sm mt-1">{{ form.errors.license_key }}</p>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                    <select
-                        v-model="form.type"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        :disabled="isSubmitting"
-                    >
-                        <option value="standard">Standard</option>
-                        <option value="professional">Professional</option>
-                        <option value="enterprise">Enterprise</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Valid From</label>
-                    <input
-                        v-model="form.valid_from"
-                        type="date"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        :disabled="isSubmitting"
-                    />
-                    <p v-if="form.errors.valid_from" class="text-red-600 text-sm mt-1">{{ form.errors.valid_from }}</p>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Valid Until</label>
-                    <input
-                        v-model="form.valid_until"
-                        type="date"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        :disabled="isSubmitting"
-                    />
-                    <p v-if="form.errors.valid_until" class="text-red-600 text-sm mt-1">{{ form.errors.valid_until }}</p>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">User Limit</label>
-                    <input
-                        v-model.number="form.user_limit"
-                        type="number"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        :disabled="isSubmitting"
-                    />
-                    <p v-if="form.errors.user_limit" class="text-red-600 text-sm mt-1">{{ form.errors.user_limit }}</p>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select
-                        v-model="form.status"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        :disabled="isSubmitting"
-                    >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                        <option value="expired">Expired</option>
-                    </select>
-                </div>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
-                <textarea
-                    v-model="form.notes"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    rows="3"
-                    :disabled="isSubmitting"
-                />
-            </div>
-
-            <div class="flex gap-2 justify-end pt-4">
-                <Button variant="outline" @click="cancelCreateLicense" :disabled="isSubmitting">
-                    Cancel
-                </Button>
-                <Button @click="submitCreateLicense" :disabled="isSubmitting">
-                    {{ isSubmitting ? 'Creating...' : 'Create License' }}
-                </Button>
-            </div>
-        </div>
-
-        <!-- Licenses Table -->
-        <div class="border rounded-lg">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>License Key</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Valid Until</TableHead>
-                        <TableHead>Modules</TableHead>
-                        <TableHead class="text-right">Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    <TableRow v-for="license in paginatedLicenses" :key="license.id">
-                        <TableCell class="font-mono text-sm">{{ license.license_key }}</TableCell>
-                        <TableCell class="capitalize">{{ license.type }}</TableCell>
-                        <TableCell>
-                            <Badge :class="statusColor(license.status)">
-                                {{ license.status }}
-                            </Badge>
-                            <Badge v-if="isExpiring(license.valid_until)" class="ml-2 bg-yellow-100 text-yellow-800">
-                                Expiring Soon
-                            </Badge>
-                        </TableCell>
-                        <TableCell>{{ new Date(license.valid_until).toLocaleDateString() }}</TableCell>
-                        <TableCell>
-                            {{ license.modules?.length || 0 }} module(s)
-                        </TableCell>
-                        <TableCell class="text-right">
-                            <Link :href="`/license/licenses/${license.id}`">
-                                <Button variant="outline" size="sm">View</Button>
-                            </Link>
-                        </TableCell>
-                    </TableRow>
-                </TableBody>
-            </Table>
-        </div>
-        <!-- Pagination -->
-        <div class="flex items-center border-t border-gray-200 bg-white px-6 py-4">
-          <div class="flex w-1/3 items-center gap-2">
-            <span class="text-sm text-gray-600">Per page:</span>
-            <select
-              v-model="perPage"
-              @change="changePerPage"
-              class="rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <!-- No license file -->
+        <div
+            v-if="!licenseStatus"
+            class="rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center dark:border-gray-700 dark:bg-gray-800"
+        >
+            <Key :size="40" class="mx-auto mb-4 text-gray-400" />
+            <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-300">No License Found</h2>
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                This application has not been activated yet.
+            </p>
+            <Link
+                href="/license/activate"
+                class="mt-6 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
             >
-              <option v-for="n in [5, 10, 25, 50]" :key="n" :value="n">{{ n }}</option>
-            </select>
-          </div>
-          <div class="flex w-1/3 justify-center gap-2">
-            <button
-              @click="currentPage--"
-              :disabled="currentPage <= 1"
-              class="rounded-lg border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400"
-              v-html="'&laquo;'"
-            />
-            <button
-              v-for="p in totalPages"
-              :key="p"
-              @click="currentPage = p"
-              :class="[
-                'rounded-lg px-3 py-1 text-sm font-medium transition-colors',
-                currentPage === p ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50',
-              ]"
-            >{{ p }}</button>
-            <button
-              @click="currentPage++"
-              :disabled="currentPage >= totalPages"
-              class="rounded-lg border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400"
-              v-html="'&raquo;'"
-            />
-          </div>
-          <div class="flex w-1/3 justify-end">
-            <p class="text-sm text-gray-600">{{ licenses.length }} total licenses</p>
-          </div>
+                Activate License
+            </Link>
         </div>
-    </div>
+
+        <template v-else>
+            <!-- Status Banner -->
+            <div
+                :class="['mb-6 flex items-start gap-4 rounded-xl border p-5', config!.bannerClass]"
+            >
+                <component :is="config!.icon" :size="24" :class="['mt-0.5 shrink-0', config!.iconClass]" />
+                <div class="flex-1">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <span class="font-semibold text-gray-900 dark:text-white">License Status</span>
+                        <span :class="['rounded-full px-2.5 py-0.5 text-xs font-semibold', config!.badgeClass]">
+                            {{ config!.label }}
+                        </span>
+                        <span
+                            v-if="licenseStatus === 'active' && days !== null && days <= 30"
+                            class="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-semibold text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300"
+                        >
+                            Expires in {{ days }} day{{ days === 1 ? '' : 's' }}
+                        </span>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ config!.message }}</p>
+                </div>
+                <Link
+                    href="/license/activate"
+                    class="shrink-0 rounded-lg border border-current px-3 py-1.5 text-xs font-medium opacity-70 hover:opacity-100"
+                >
+                    Re-activate
+                </Link>
+            </div>
+
+            <!-- Cards -->
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                <!-- License Info -->
+                <div class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+                    <div class="mb-4 flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                        <Key :size="18" />
+                        <span class="text-sm font-medium uppercase tracking-wide">License</span>
+                    </div>
+                    <dl class="space-y-4">
+                        <div>
+                            <dt class="text-xs text-gray-400 dark:text-gray-500">Company</dt>
+                            <dd class="mt-0.5 font-semibold text-gray-900 dark:text-white">
+                                {{ companyName ?? '—' }}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-gray-400 dark:text-gray-500">License Key</dt>
+                            <dd class="mt-0.5 font-mono text-sm text-gray-700 dark:text-gray-300">
+                                {{ licenseKey ?? '—' }}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-gray-400 dark:text-gray-500">Issued</dt>
+                            <dd class="mt-0.5 text-sm text-gray-700 dark:text-gray-300">
+                                {{ formatDate(issuedAt) }}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-gray-400 dark:text-gray-500">Expires</dt>
+                            <dd
+                                :class="[
+                                    'mt-0.5 text-sm font-medium',
+                                    licenseStatus === 'expired'
+                                        ? 'text-red-600 dark:text-red-400'
+                                        : days !== null && days <= 30
+                                          ? 'text-yellow-600 dark:text-yellow-400'
+                                          : 'text-gray-700 dark:text-gray-300',
+                                ]"
+                            >
+                                {{ formatDate(expiresAt) }}
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <!-- Server / Hardware Info -->
+                <div class="rounded-xl border border-gray-200 bg-white p-6 lg:col-span-2 dark:border-gray-700 dark:bg-gray-800">
+                    <div class="mb-4 flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                        <Cpu :size="18" />
+                        <span class="text-sm font-medium uppercase tracking-wide">Bound Server</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <dt class="text-xs text-gray-400 dark:text-gray-500">Hostname</dt>
+                            <dd class="mt-0.5 font-mono text-sm text-gray-700 dark:text-gray-300">
+                                {{ hostname }}
+                            </dd>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <dt class="text-xs text-gray-400 dark:text-gray-500">Hardware ID (SHA-256)</dt>
+                            <dd
+                                :class="[
+                                    'mt-1 break-all rounded-lg border px-3 py-2 font-mono text-xs',
+                                    licenseStatus === 'wrong_machine'
+                                        ? 'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-900/20 dark:text-orange-300'
+                                        : 'border-gray-100 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400',
+                                ]"
+                            >
+                                {{ hardwareHash }}
+                            </dd>
+                        </div>
+                    </div>
+
+                    <!-- Wrong machine hint -->
+                    <div
+                        v-if="licenseStatus === 'wrong_machine'"
+                        class="mt-4 flex items-start gap-2 rounded-lg bg-orange-50 p-3 text-xs text-orange-700 dark:bg-orange-900/20 dark:text-orange-300"
+                    >
+                        <AlertTriangle :size="14" class="mt-0.5 shrink-0" />
+                        <span>
+                            The license file was generated for a different machine. If you moved the application to this
+                            server, you must re-activate with the key on this machine.
+                        </span>
+                    </div>
+
+                    <!-- Active confirmation -->
+                    <div
+                        v-if="licenseStatus === 'active'"
+                        class="mt-4 flex items-center gap-2 rounded-lg bg-green-50 p-3 text-xs text-green-700 dark:bg-green-900/20 dark:text-green-300"
+                    >
+                        <MonitorCheck :size="14" class="shrink-0" />
+                        <span>This server matches the bound hardware. License is valid on this machine.</span>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </Layout>
 </template>

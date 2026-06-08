@@ -26,6 +26,7 @@ class ShiftTemplatesController extends Controller
             'break_end_time' => ['nullable', 'date_format:H:i', 'after:break_start_time'],
             'work_days' => ['nullable', 'array'],
             'work_days.*' => ['in:monday,tuesday,wednesday,thursday,friday,saturday,sunday'],
+            'swap_enabled' => ['boolean'],
         ]);
 
         $companyId = Auth::user()->employee?->company_id;
@@ -33,6 +34,7 @@ class ShiftTemplatesController extends Controller
         ShiftTemplate::create(array_merge($data, [
             'company_id' => $companyId,
             'is_active' => true,
+            'swap_enabled' => $data['swap_enabled'] ?? false,
         ]));
 
         return redirect(route('app-settings.timekeeping.index').'?sub=shifts')
@@ -53,6 +55,7 @@ class ShiftTemplatesController extends Controller
             'work_days' => ['nullable', 'array'],
             'work_days.*' => ['in:monday,tuesday,wednesday,thursday,friday,saturday,sunday'],
             'is_active' => ['boolean'],
+            'swap_enabled' => ['boolean'],
         ]);
 
         $shiftTemplate->update($data);
@@ -69,6 +72,18 @@ class ShiftTemplatesController extends Controller
 
         return redirect(route('app-settings.timekeeping.index').'?sub=shifts')
             ->with('success', 'Shift template deactivated.');
+    }
+
+    public function toggleSwap(ShiftTemplate $shiftTemplate): RedirectResponse
+    {
+        $this->authorizeTemplate($shiftTemplate);
+
+        $shiftTemplate->update(['swap_enabled' => ! $shiftTemplate->swap_enabled]);
+
+        $status = $shiftTemplate->swap_enabled ? 'enabled' : 'disabled';
+
+        return redirect(route('app-settings.timekeeping.index').'?sub=shifts')
+            ->with('success', "Shift swap {$status} for {$shiftTemplate->name}.");
     }
 
     private function authorizeTemplate(ShiftTemplate $shiftTemplate): void

@@ -2,24 +2,23 @@
 
 namespace App\Modules\License;
 
+use App\Modules\License\Services\HardwareFingerprint;
+use App\Modules\License\Services\LicenseFile;
 use Illuminate\Support\ServiceProvider;
 
 class LicenseServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
-        // Register License services
+        $this->app->singleton(HardwareFingerprint::class);
+
+        $this->app->singleton(LicenseFile::class, function ($app) {
+            return new LicenseFile($app->make(HardwareFingerprint::class));
+        });
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-        // Load License routes
         $this->loadRoutesFrom(__DIR__.'/routes/web.php');
     }
 }

@@ -49,6 +49,10 @@
             <AdminOvertimeManagement v-if="isAdmin" />
             <OvertimeManagement v-else />
           </template>
+          <template v-else-if="activeTab === 'schedule_change'">
+            <AdminScheduleChangeRequest v-if="isAdmin" />
+            <ScheduleChangeRequest v-else />
+          </template>
           <TimekeepingReports v-else-if="activeTab === 'reports'" />
           <TeamAttendance v-else-if="activeTab === 'team'" />
           <RequestsPanel v-else-if="activeTab === 'requests'" />
@@ -74,6 +78,8 @@ import AdminLeaveManagement from '@/components/Timekeeping/AdminLeaveManagement.
 import AdminShiftScheduling from '@/components/Timekeeping/AdminShiftScheduling.vue'
 import AdminOvertimeManagement from '@/components/Timekeeping/AdminOvertimeManagement.vue'
 import RequestsPanel from '@/components/Timekeeping/RequestsPanel.vue'
+import ScheduleChangeRequest from '@/components/Timekeeping/ScheduleChangeRequest.vue'
+import AdminScheduleChangeRequest from '@/components/Timekeeping/AdminScheduleChangeRequest.vue'
 
 const page = usePage()
 const isAdmin = computed(() => (page.props.auth as any)?.isAdmin === true)
@@ -88,6 +94,7 @@ const tabs = computed(() => {
     { id: 'leave', label: 'Leave Management' },
     { id: 'shift', label: 'Shift Scheduling' },
     { id: 'overtime', label: 'Overtime' },
+    { id: 'schedule_change', label: 'Schedule Change' },
     { id: 'reports', label: 'Reports' },
   ]
   // Managers (non-admin) get a Team tab for their direct reports
