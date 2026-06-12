@@ -18,7 +18,9 @@ return new class extends Migration
             $table->date('start_date');
             $table->date('end_date');
             $table->date('pay_date');
-            $table->enum('status', ['draft', 'processing', 'finalized', 'cancelled'])->default('draft');
+            // Lifecycle: draft → review → finalized (or cancelled). Kept as a string so the
+            // values can evolve without fighting SQL Server CHECK constraints.
+            $table->string('status')->default('draft');
             $table->dateTime('processed_at')->nullable();
             $table->foreignId('processed_by')->nullable()->constrained('users')->noActionOnDelete();
             $table->timestamps();

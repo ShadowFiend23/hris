@@ -21,31 +21,56 @@ class NightDifferentialService
      * Compute night differential pay given clock-in and clock-out times.
      *
      * @param  float  $hourlyRate  Employee's regular hourly rate
+     * @param  float  $rate  Night differential rate (e.g. 0.10)
+     * @param  int  $breakMinutes  Unpaid break minutes to exclude from the night band
+     * @param  float|null  $workedHoursCap  Actual hours worked; ND hours never exceed this
      */
-    public function compute(Carbon $clockIn, Carbon $clockOut, float $hourlyRate, float $rate = self::ND_RATE): float
-    {
-        $ndHours = $this->computeNightHours($clockIn, $clockOut);
+    public function compute(
+        Carbon $clockIn,
+        Carbon $clockOut,
+        float $hourlyRate,
+        float $rate = self::ND_RATE,
+        int $breakMinutes = 0,
+        ?float $workedHoursCap = null
+    ): float {
+        $ndHours = $this->computeNightHours($clockIn, $clockOut, $breakMinutes, $workedHoursCap);
 
         return round($ndHours * $hourlyRate * $rate, 2);
     }
 
     /**
-     * Calculate total hours worked within the 10PM–6AM window.
+     * Calculate total hours worked within the 10PM–6AM window, net of any break
+     * time that falls inside that window, and never exceeding hours actually worked.
      */
-    public function computeNightHours(Carbon $clockIn, Carbon $clockOut): float
-    {
+    public function computeNightHours(
+        Carbon $clockIn,
+        Carbon $clockOut,
+        int $breakMinutes = 0,
+        ?float $workedHoursCap = null
+    ): float {
         if ($clockOut->lte($clockIn)) {
             return 0.0;
         }
 
-        $current = $clockIn->copy();
-        $ndSeconds = 0;
-
-        // Iterate in 1-minute increments is expensive; use range math instead
-        // Split the shift into windows and intersect with 10PM–6AM bands
         $ndSeconds = $this->intersectWithNightBand($clockIn, $clockOut);
+        $ndHours = $ndSeconds / 3600;
 
-        return round($ndSeconds / 3600, 4);
+        // Exclude the share of the unpaid break that falls within the night band.
+        // Without an explicit break window we attribute the break proportionally to
+        // the fraction of the shift that lies inside the night band.
+        if ($breakMinutes > 0 && $ndHours > 0) {
+            $totalShiftSeconds = max(1, $clockOut->getTimestamp() - $clockIn->getTimestamp());
+            $nightFraction = min(1.0, $ndSeconds / $totalShiftSeconds);
+            $ndHours -= ($breakMinutes / 60) * $nightFraction;
+        }
+
+        $ndHours = max(0.0, $ndHours);
+
+        if ($workedHoursCap !== null) {
+            $ndHours = min($ndHours, max(0.0, $workedHoursCap));
+        }
+
+        return round($ndHours, 4);
     }
 
     /**

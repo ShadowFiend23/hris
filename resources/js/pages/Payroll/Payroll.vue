@@ -77,7 +77,7 @@
             <td class="px-6 py-3 text-sm text-gray-700">{{ formatDate(period.pay_date) }}</td>
             <td class="px-6 py-3 text-sm">
               <span :class="statusClass(period.status)" class="rounded-full px-2 py-0.5 text-xs font-semibold">
-                {{ period.status }}
+                {{ statusLabel(period.status) }}
               </span>
             </td>
             <td class="px-6 py-3 text-right text-sm text-gray-700">{{ period.employee_count }}</td>
@@ -139,9 +139,16 @@ const formatPeso = (amount: number) =>
 const statusClass = (status: string) => {
   switch (status) {
     case 'finalized': return 'bg-green-100 text-green-800'
-    case 'processing': return 'bg-blue-100 text-blue-800'
+    case 'review': return 'bg-amber-100 text-amber-800'
     case 'draft': return 'bg-gray-100 text-gray-700'
     default: return 'bg-gray-100 text-gray-700'
   }
 }
+
+const statusLabel = (status: string) => ({
+  draft: 'Draft',
+  review: 'For Review',
+  finalized: 'Finalized',
+  cancelled: 'Cancelled',
+}[status] ?? status)
 </script>

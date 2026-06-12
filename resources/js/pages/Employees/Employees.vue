@@ -6,13 +6,23 @@
         <h1 class="text-3xl font-bold text-gray-900">Employees</h1>
         <p class="text-gray-600 mt-1">Manage your organization's employees</p>
       </div>
-      <Link
-        href="/employees/create"
-        class="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
-      >
-        <Plus :size="20" />
-        Add Employee
-      </Link>
+      <div class="flex items-center gap-3">
+        <button
+          v-if="canEdit"
+          @click="openImportModal"
+          class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+        >
+          <Upload :size="16" />
+          Import Employees
+        </button>
+        <Link
+          href="/employees/create"
+          class="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+        >
+          <Plus :size="20" />
+          Add Employee
+        </Link>
+      </div>
     </div>
 
     <!-- Search and Filter Bar -->
@@ -320,6 +330,162 @@
         </div>
       </div>
     </div>
+    <!-- Import Employees Modal -->
+    <div
+      v-if="showImportModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      @click.self="closeImportModal"
+    >
+      <div class="mx-4 w-full max-w-2xl rounded-xl bg-white shadow-2xl dark:bg-gray-800">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+          <div class="flex items-center gap-3">
+            <div class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900">
+              <Upload class="text-blue-600 dark:text-blue-400" :size="20" />
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Import Employees</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Upload an Excel file to bulk-add employees</p>
+            </div>
+          </div>
+          <button
+            @click="closeImportModal"
+            class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700"
+          >
+            <X :size="20" />
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="px-6 py-5">
+          <!-- Results view -->
+          <template v-if="importResults">
+            <div class="mb-4 flex items-center justify-between">
+              <div class="flex items-center gap-2 text-sm">
+                <CheckCircle class="text-green-500" :size="18" />
+                <span class="font-medium text-gray-800 dark:text-gray-200">
+                  Import complete — {{ importResults.filter((r) => r.status === 'created').length }} created,
+                  {{ importResults.filter((r) => r.status === 'skipped').length }} skipped
+                </span>
+              </div>
+            </div>
+
+            <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+              Share credentials below securely. Employees will be required to change their password on first login.
+            </div>
+
+            <div class="overflow-auto rounded-lg border border-gray-200 dark:border-gray-700" style="max-height: 320px">
+              <table class="w-full text-sm">
+                <thead class="sticky top-0 bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300">Name</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300">Username</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300">Temp Password</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="result in importResults"
+                    :key="result.row"
+                    class="border-t border-gray-100 dark:border-gray-700"
+                  >
+                    <td class="px-4 py-2 text-gray-900 dark:text-gray-100">{{ result.name }}</td>
+                    <td class="px-4 py-2 font-mono text-gray-700 dark:text-gray-300">{{ result.username ?? '—' }}</td>
+                    <td class="px-4 py-2 font-mono text-gray-700 dark:text-gray-300">{{ result.temp_password ?? '—' }}</td>
+                    <td class="px-4 py-2">
+                      <span
+                        v-if="result.status === 'created'"
+                        class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                      >
+                        <CheckCircle :size="11" /> Created
+                      </span>
+                      <span
+                        v-else
+                        :title="result.error ?? ''"
+                        class="inline-flex cursor-help items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                      >
+                        <AlertCircle :size="11" /> Skipped
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mt-5 flex justify-end">
+              <button
+                @click="closeImportModal"
+                class="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                Done
+              </button>
+            </div>
+          </template>
+
+          <!-- Upload form -->
+          <template v-else>
+            <!-- Step 1: Download template -->
+            <div class="mb-5 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+              <p class="mb-2 text-sm font-medium text-gray-800 dark:text-gray-200">Step 1: Download the template</p>
+              <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
+                Fill in employee information using the provided Excel template.
+              </p>
+              <a
+                href="/employees/import/template"
+                class="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+              >
+                <Download :size="16" />
+                Download Template (.xlsx)
+              </a>
+            </div>
+
+            <!-- Step 2: Upload -->
+            <div class="mb-5 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+              <p class="mb-2 text-sm font-medium text-gray-800 dark:text-gray-200">Step 2: Upload your completed file</p>
+              <label
+                class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 p-6 text-center hover:border-blue-400 hover:bg-blue-50/50 dark:border-gray-600 dark:hover:border-blue-500 dark:hover:bg-blue-900/10"
+                :class="importFile ? 'border-blue-400 bg-blue-50/50 dark:border-blue-500' : ''"
+              >
+                <Upload class="text-gray-400" :size="28" />
+                <span class="text-sm text-gray-600 dark:text-gray-400">
+                  <span v-if="importFile" class="font-medium text-blue-600 dark:text-blue-400">{{ importFile.name }}</span>
+                  <span v-else>Click to select or drag &amp; drop your Excel file</span>
+                </span>
+                <span class="text-xs text-gray-400">.xlsx or .xls only, max 5 MB</span>
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  class="hidden"
+                  @change="onFileChange"
+                />
+              </label>
+            </div>
+
+            <div v-if="importError" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300">
+              {{ importError }}
+            </div>
+
+            <div class="flex justify-end gap-3">
+              <button
+                @click="closeImportModal"
+                class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                @click="importEmployees"
+                :disabled="!importFile || isImporting"
+                class="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Loader2 v-if="isImporting" class="animate-spin" :size="16" />
+                {{ isImporting ? 'Importing...' : 'Import Employees' }}
+              </button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
   </Layout>
 </template>
 
@@ -327,17 +493,21 @@
 import { ref, computed, onUnmounted } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import {
-  Search,
-  Plus,
-  MoreVertical,
-  Eye,
-  Pencil,
-  Trash2,
-  X,
-  Loader2,
-  Users,
-  ArrowUpDown,
+  AlertCircle,
   AlertTriangle,
+  ArrowUpDown,
+  CheckCircle,
+  Download,
+  Eye,
+  Loader2,
+  MoreVertical,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  Upload,
+  Users,
+  X,
 } from 'lucide-vue-next'
 import Layout from '@/components/Layout.vue'
 import {
@@ -346,6 +516,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+
+interface ImportResult {
+  row: number
+  name: string
+  username: string | null
+  temp_password: string | null
+  status: 'created' | 'skipped'
+  error: string | null
+}
 
 interface Employee {
   id: number
@@ -397,6 +576,13 @@ const props = withDefaults(defineProps<Props>(), {
   canEdit: false,
   canDelete: false,
 })
+
+// Import state
+const showImportModal = ref(false)
+const importFile = ref<File | null>(null)
+const importResults = ref<ImportResult[] | null>(null)
+const isImporting = ref(false)
+const importError = ref<string | null>(null)
 
 // State
 const searchQuery = ref(props.filters.search || '')
@@ -556,6 +742,60 @@ const getStatusColor = (status: string) => {
 const formatStatus = (status: string) => {
   const found = props.employmentStatuses.find((s) => s.value === status)
   return found?.label || status
+}
+
+// Import methods
+const openImportModal = (): void => {
+  importFile.value = null
+  importResults.value = null
+  importError.value = null
+  showImportModal.value = true
+}
+
+const closeImportModal = (): void => {
+  showImportModal.value = false
+  if (importResults.value?.some((r) => r.status === 'created')) {
+    router.reload({ only: ['employees'] })
+  }
+}
+
+const onFileChange = (event: Event): void => {
+  const input = event.target as HTMLInputElement
+  importFile.value = input.files?.[0] ?? null
+  importError.value = null
+}
+
+const importEmployees = async (): Promise<void> => {
+  if (!importFile.value) { return }
+
+  isImporting.value = true
+  importError.value = null
+
+  const formData = new FormData()
+  formData.append('file', importFile.value)
+
+  const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? ''
+
+  try {
+    const response = await fetch('/employees/import', {
+      method: 'POST',
+      headers: { 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      importError.value = err?.message ?? `Upload failed (${response.status}). Check the file and try again.`
+      return
+    }
+
+    const data = await response.json()
+    importResults.value = data.results
+  } catch {
+    importError.value = 'An unexpected error occurred. Please try again.'
+  } finally {
+    isImporting.value = false
+  }
 }
 
 onUnmounted(() => {

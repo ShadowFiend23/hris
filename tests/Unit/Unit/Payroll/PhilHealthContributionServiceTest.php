@@ -3,15 +3,20 @@
 namespace Tests\Unit\Unit\Payroll;
 
 use App\Modules\Payroll\Services\PhilHealthContributionService;
-use PHPUnit\Framework\TestCase;
+use Database\Seeders\ContributionBracketsSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class PhilHealthContributionServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     private PhilHealthContributionService $service;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(ContributionBracketsSeeder::class);
         $this->service = new PhilHealthContributionService;
     }
 

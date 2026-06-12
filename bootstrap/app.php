@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CheckModuleAccess;
+use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\VerifyHardwareLicense;
@@ -31,6 +32,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'module.access' => CheckModuleAccess::class,
             'license.verify' => VerifyHardwareLicense::class,
+            'password.change' => EnsurePasswordChanged::class,
+        ]);
+
+        $middleware->web(append: [
+            EnsurePasswordChanged::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

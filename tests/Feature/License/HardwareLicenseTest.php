@@ -151,22 +151,88 @@ PEM;
     }
 
     // -------------------------------------------------------------------------
-    // LicenseFile — hardware check
+    // LicenseFile — hardware check (tiered: machine ID → MAC → disk serial)
     // -------------------------------------------------------------------------
 
-    public function test_hardware_matches_when_hash_equals_current_machine(): void
+    public function test_hardware_matches_when_all_hashes_match_current_machine(): void
     {
         $fp = app(HardwareFingerprint::class);
         $licenseFile = app(LicenseFile::class);
 
-        $this->assertTrue($licenseFile->hardwareMatches(['hardware_hash' => $fp->generate()]));
+        $this->assertTrue($licenseFile->hardwareMatches([
+            'machine_id_hash' => $fp->getMachineIdHash(),
+            'mac_hash' => $fp->getMacHash(),
+            'disk_serial_hash' => $fp->getDiskSerialHash(),
+        ]));
     }
 
-    public function test_hardware_does_not_match_different_hash(): void
+    public function test_hardware_matches_with_only_machine_id_correct(): void
+    {
+        $fp = app(HardwareFingerprint::class);
+        $licenseFile = app(LicenseFile::class);
+
+        $machineIdHash = $fp->getMachineIdHash();
+        if ($machineIdHash === '') {
+            $this->markTestSkipped('Machine ID not available on this system.');
+        }
+
+        $this->assertTrue($licenseFile->hardwareMatches([
+            'machine_id_hash' => $machineIdHash,
+            'mac_hash' => 'wrong-mac-hash',
+            'disk_serial_hash' => 'wrong-disk-hash',
+        ]));
+    }
+
+    public function test_hardware_matches_falls_through_to_mac_when_machine_id_wrong(): void
+    {
+        $fp = app(HardwareFingerprint::class);
+        $licenseFile = app(LicenseFile::class);
+
+        $macHash = $fp->getMacHash();
+        if ($macHash === '') {
+            $this->markTestSkipped('MAC address not available on this system.');
+        }
+
+        $this->assertTrue($licenseFile->hardwareMatches([
+            'machine_id_hash' => 'wrong-machine-id-hash',
+            'mac_hash' => $macHash,
+            'disk_serial_hash' => 'wrong-disk-hash',
+        ]));
+    }
+
+    public function test_hardware_matches_falls_through_to_disk_serial_when_others_wrong(): void
+    {
+        $fp = app(HardwareFingerprint::class);
+        $licenseFile = app(LicenseFile::class);
+
+        $diskSerialHash = $fp->getDiskSerialHash();
+        if ($diskSerialHash === '') {
+            $this->markTestSkipped('Disk serial not available on this system.');
+        }
+
+        $this->assertTrue($licenseFile->hardwareMatches([
+            'machine_id_hash' => 'wrong-machine-id-hash',
+            'mac_hash' => 'wrong-mac-hash',
+            'disk_serial_hash' => $diskSerialHash,
+        ]));
+    }
+
+    public function test_hardware_does_not_match_when_all_hashes_wrong(): void
     {
         $licenseFile = app(LicenseFile::class);
 
-        $this->assertFalse($licenseFile->hardwareMatches(['hardware_hash' => 'wrong-hash-value']));
+        $this->assertFalse($licenseFile->hardwareMatches([
+            'machine_id_hash' => 'wrong-machine-id',
+            'mac_hash' => 'wrong-mac',
+            'disk_serial_hash' => 'wrong-disk',
+        ]));
+    }
+
+    public function test_hardware_does_not_match_when_no_hash_fields_present(): void
+    {
+        $licenseFile = app(LicenseFile::class);
+
+        $this->assertFalse($licenseFile->hardwareMatches(['license_key' => 'some-key']));
     }
 
     // -------------------------------------------------------------------------
@@ -213,7 +279,9 @@ PEM;
 
         $blob = $this->buildSignedBlob([
             'license_key' => 'KEY-VALID',
-            'hardware_hash' => $fp->generate(),
+            'machine_id_hash' => $fp->getMachineIdHash(),
+            'mac_hash' => $fp->getMacHash(),
+            'disk_serial_hash' => $fp->getDiskSerialHash(),
             'company' => 'Test Corp',
             'issued_at' => now()->toISOString(),
             'expires_at' => '2099-12-31T23:59:59Z',
@@ -231,7 +299,9 @@ PEM;
 
         $blob = $this->buildSignedBlob([
             'license_key' => 'KEY-EXPIRED',
-            'hardware_hash' => $fp->generate(),
+            'machine_id_hash' => $fp->getMachineIdHash(),
+            'mac_hash' => $fp->getMacHash(),
+            'disk_serial_hash' => $fp->getDiskSerialHash(),
             'company' => 'Test Corp',
             'issued_at' => now()->toISOString(),
             'expires_at' => '2000-01-01T00:00:00Z',
@@ -248,7 +318,9 @@ PEM;
 
         $blob = $this->buildSignedBlob([
             'license_key' => 'KEY-WRONG-HW',
-            'hardware_hash' => 'not-this-machine',
+            'machine_id_hash' => 'wrong-machine-id',
+            'mac_hash' => 'wrong-mac',
+            'disk_serial_hash' => 'wrong-disk-serial',
             'company' => 'Test Corp',
             'issued_at' => now()->toISOString(),
             'expires_at' => '2099-12-31T23:59:59Z',
@@ -311,7 +383,9 @@ PEM;
         $fp = app(HardwareFingerprint::class);
         $blob = $this->buildSignedBlob([
             'license_key' => 'KEY',
-            'hardware_hash' => $fp->generate(),
+            'machine_id_hash' => $fp->getMachineIdHash(),
+            'mac_hash' => $fp->getMacHash(),
+            'disk_serial_hash' => $fp->getDiskSerialHash(),
             'company' => 'Test',
             'issued_at' => now()->toISOString(),
             'expires_at' => '2099-01-01T00:00:00Z',
@@ -339,7 +413,9 @@ PEM;
 
         $blob = $this->buildSignedBlob([
             'license_key' => 'VALID-KEY-001',
-            'hardware_hash' => $fp->generate(),
+            'machine_id_hash' => $fp->getMachineIdHash(),
+            'mac_hash' => $fp->getMacHash(),
+            'disk_serial_hash' => $fp->getDiskSerialHash(),
             'company' => 'Test Corp',
             'issued_at' => now()->toISOString(),
             'expires_at' => '2099-12-31T23:59:59Z',

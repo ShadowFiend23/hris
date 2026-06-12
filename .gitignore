@@ -6,6 +6,7 @@
 /public/storage
 /storage/*.key
 /storage/license/license.lic
+/dist
 /storage/license_private.key.tmp
 /storage/license_public.key.tmp
 /storage/pail

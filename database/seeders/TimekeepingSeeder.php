@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Modules\Core\Models\Company;
 use App\Modules\Core\Models\Employee;
-use App\Modules\Timekeeping\Models\AttendanceRecord;
 use App\Modules\Timekeeping\Models\EmployeeSchedule;
 use App\Modules\Timekeeping\Models\LeaveBalance;
 use App\Modules\Timekeeping\Models\LeaveType;
@@ -50,7 +49,6 @@ class TimekeepingSeeder extends Seeder
             $this->initializeLeaveBalances($employee, $leaveTypes);
             $this->assignShiftToEmployee($employee, $defaultShift);
             $this->generateYearSchedules($employee, $defaultShift);
-            $this->createSampleAttendance($employee, $defaultShift);
         }
     }
 
@@ -188,9 +186,11 @@ class TimekeepingSeeder extends Seeder
                 'company_id' => $company->id,
                 'standard_hours_per_day' => 8,
                 'standard_hours_per_week' => 40,
+                // DOLE-compounded OT premiums: ordinary 125%, rest/special 169% (1.30×1.30),
+                // regular holiday 260% (2.00×1.30).
                 'weekday_overtime_rate' => 1.25,
-                'weekend_overtime_rate' => 1.50,
-                'holiday_overtime_rate' => 2.00,
+                'weekend_overtime_rate' => 1.69,
+                'holiday_overtime_rate' => 2.60,
                 'grace_period_minutes' => 5,
                 'late_threshold_minutes' => 15,
                 'is_active' => true,
@@ -222,68 +222,6 @@ class TimekeepingSeeder extends Seeder
                     'carried_over_days' => 0,
                 ]
             );
-        }
-    }
-
-    /**
-     * Create sample attendance records for an employee
-     */
-    private function createSampleAttendance(Employee $employee, ?ShiftTemplate $shift = null): void
-    {
-        // Use the shift's scheduled start time, defaulting to 08:00 if none
-        $scheduledStartHour = 8;
-        $scheduledStartMinute = 0;
-
-        if ($shift && $shift->start_time) {
-            $scheduledStartHour = (int) $shift->start_time->format('H');
-            $scheduledStartMinute = (int) $shift->start_time->format('i');
-        }
-
-        $workDays = $shift?->work_days ?? [1, 2, 3, 4, 5];
-
-        // Create attendance for the past 30 calendar days
-        $date = Carbon::now()->subDays(30)->startOfDay();
-        $today = Carbon::now()->startOfDay();
-
-        while ($date < $today) {
-            $dayOfWeek = (int) $date->format('N'); // 1=Mon, 7=Sun
-
-            if (in_array($dayOfWeek, $workDays)) {
-                // Random variance: -5 to +30 minutes from scheduled start
-                $variance = rand(-5, 30);
-                $clockIn = $date->copy()->setTime($scheduledStartHour, $scheduledStartMinute, 0)->addMinutes($variance);
-
-                // Clock out after standard 8h + small variance
-                $clockOut = $clockIn->copy()->addHours(8)->addMinutes(rand(-15, 45));
-
-                $breakDuration = 60;
-                $totalMinutes = $clockIn->diffInMinutes($clockOut) - $breakDuration;
-                $totalHours = round($totalMinutes / 60, 2);
-
-                // Determine status based on actual vs scheduled start (15-min grace period)
-                $graceMinutes = 15;
-                $scheduledStart = $date->copy()->setTime($scheduledStartHour, $scheduledStartMinute, 0);
-                $status = $clockIn->gt($scheduledStart->copy()->addMinutes($graceMinutes)) ? 'late' : 'present';
-
-                AttendanceRecord::firstOrCreate(
-                    [
-                        'employee_id' => $employee->id,
-                        'date' => $date->toDateString(),
-                    ],
-                    [
-                        'employee_id' => $employee->id,
-                        'company_id' => $employee->company_id,
-                        'date' => $date->toDateString(),
-                        'clock_in' => $clockIn,
-                        'clock_out' => $clockOut,
-                        'total_hours' => $totalHours,
-                        'break_duration' => $breakDuration,
-                        'status' => $status,
-                    ]
-                );
-            }
-
-            $date->addDay();
         }
     }
 

@@ -7,6 +7,7 @@ use App\Http\Requests\Payroll\PayrollPeriodRequest;
 use App\Jobs\ProcessPayrollJob;
 use App\Modules\Payroll\Models\PayrollPeriod;
 use App\Modules\Payroll\Models\PayrollSetting;
+use App\Modules\Payroll\Services\PayrollCalculationService;
 use App\Modules\Payroll\Services\PayrollPeriodService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -15,7 +16,10 @@ use Inertia\Response;
 
 class PayrollPeriodController extends Controller
 {
-    public function __construct(private readonly PayrollPeriodService $periodService) {}
+    public function __construct(
+        private readonly PayrollPeriodService $periodService,
+        private readonly PayrollCalculationService $calculationService,
+    ) {}
 
     public function index(): Response
     {
@@ -133,18 +137,18 @@ class PayrollPeriodController extends Controller
 
         ProcessPayrollJob::dispatch($payrollPeriod->id, request()->user()->id);
 
-        return redirect()->back()->with('success', 'Payroll processing has been queued.');
+        return redirect()->back()->with('success', 'Payroll run has been queued.');
     }
 
     public function finalize(PayrollPeriod $payrollPeriod): RedirectResponse
     {
         $this->authorize('finalize', $payrollPeriod);
 
-        if ($payrollPeriod->status !== 'processing') {
-            return redirect()->back()->withErrors(['period' => 'Only processed periods can be finalized.']);
+        if ($payrollPeriod->status !== 'review') {
+            return redirect()->back()->withErrors(['period' => 'Only periods under review can be finalized.']);
         }
 
-        $payrollPeriod->update(['status' => 'finalized']);
+        $this->calculationService->finalizePeriod($payrollPeriod);
 
         return redirect()->back()->with('success', 'Payroll period finalized.');
     }
@@ -152,6 +156,13 @@ class PayrollPeriodController extends Controller
     public function cancel(PayrollPeriod $payrollPeriod): RedirectResponse
     {
         $this->authorize('cancel', $payrollPeriod);
+
+        // Discard any payslips generated during review so a fresh run starts clean.
+        $payrollPeriod->items()->each(function ($item): void {
+            $item->earnings()->delete();
+            $item->deductions()->delete();
+        });
+        $payrollPeriod->items()->delete();
 
         $payrollPeriod->update(['status' => 'cancelled']);
 

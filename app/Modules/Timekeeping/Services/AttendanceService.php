@@ -206,7 +206,8 @@ class AttendanceService
     }
 
     /**
-     * Determine attendance status based on clock-in time
+     * Determine attendance status based on clock-in time against the employee's
+     * actual scheduled shift start (not a hardcoded time).
      */
     private function determineStatus(Employee $employee, Carbon $clockIn): string
     {
@@ -216,20 +217,13 @@ class AttendanceService
             return 'present';
         }
 
-        // Get the employee's scheduled start time (simplified - using 9 AM as default)
-        $scheduledStart = $clockIn->copy()->setTime(9, 0, 0);
+        $shift = $employee->shiftTemplate;
+        $startTime = $shift?->start_time ? $shift->start_time->format('H:i:s') : '09:00:00';
+        $scheduledStart = Carbon::parse($clockIn->toDateString().' '.$startTime);
 
-        $minutesLate = $scheduledStart->diffInMinutes($clockIn, false);
+        $minutesLate = (int) $scheduledStart->diffInMinutes($clockIn, false);
 
-        if ($minutesLate <= $policy->grace_period_minutes) {
-            return 'present';
-        }
-
-        if ($minutesLate > $policy->late_threshold_minutes) {
-            return 'late';
-        }
-
-        return 'present';
+        return $minutesLate > 0 && $policy->isLate($minutesLate) ? 'late' : 'present';
     }
 
     /**

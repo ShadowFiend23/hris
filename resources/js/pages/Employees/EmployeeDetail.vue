@@ -343,7 +343,7 @@
                   <td class="py-3 px-4 text-gray-900">{{ formatDate(record.date) }}</td>
                   <td class="py-3 px-4 text-gray-600">{{ formatTime(record.clock_in) }}</td>
                   <td class="py-3 px-4 text-gray-600">{{ formatTime(record.clock_out) }}</td>
-                  <td class="py-3 px-4 text-gray-900">{{ record.total_hours?.toFixed(1) || '0' }}h</td>
+                  <td class="py-3 px-4 text-gray-900">{{ record.total_hours != null ? parseFloat(String(record.total_hours)).toFixed(1) : '0' }}h</td>
                   <td class="py-3 px-4">
                     <span :class="['inline-flex items-center px-2 py-1 rounded text-xs font-medium', getAttendanceStatusClass(record.status)]">
                       {{ formatAttendanceStatus(record.status) }}
@@ -843,15 +843,15 @@ const loadTimekeepingData = async () => {
   try {
     // Fetch employee-specific timekeeping data
     const [attendanceRes, leaveRes, overtimeRes] = await Promise.all([
-      fetch(`/api/timekeeping/admin/employee/${props.employee.id}/attendance?per_page=10`, {
+      fetch(`/api/timekeeping/attendance/employee/${props.employee.id}?per_page=10`, {
         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         credentials: 'same-origin',
       }),
-      fetch(`/api/timekeeping/admin/employee/${props.employee.id}/leave/balance`, {
+      fetch(`/api/timekeeping/leave/employee/${props.employee.id}/balance`, {
         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         credentials: 'same-origin',
       }),
-      fetch(`/api/timekeeping/admin/employee/${props.employee.id}/overtime?per_page=30`, {
+      fetch(`/api/timekeeping/overtime/employee/${props.employee.id}?per_page=30`, {
         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         credentials: 'same-origin',
       }),
@@ -864,7 +864,7 @@ const loadTimekeepingData = async () => {
       timekeepingData.value.attendance.daysPresent = records.filter((r: AttendanceRecord) => r.status === 'present').length
       timekeepingData.value.attendance.daysLate = records.filter((r: AttendanceRecord) => r.status === 'late').length
       timekeepingData.value.attendance.daysAbsent = records.filter((r: AttendanceRecord) => r.status === 'absent').length
-      timekeepingData.value.attendance.totalHours = records.reduce((sum: number, r: AttendanceRecord) => sum + (r.total_hours || 0), 0)
+      timekeepingData.value.attendance.totalHours = records.reduce((sum: number, r: AttendanceRecord) => sum + (parseFloat(String(r.total_hours)) || 0), 0)
     }
 
     if (leaveRes.ok) {

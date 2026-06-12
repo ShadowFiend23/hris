@@ -24,12 +24,11 @@ class ProcessPayrollJob implements ShouldQueue
     {
         $period = PayrollPeriod::with('setting')->findOrFail($this->payrollPeriodId);
 
+        // Computes payslips and moves the period to "review" (open for review).
+        // Finalizing — which locks the period and commits loan balances — is a separate
+        // admin action.
         $calculator->runPayrollForPeriod($period);
 
-        $period->update([
-            'status' => 'finalized',
-            'processed_by' => $this->processedBy,
-            'processed_at' => now(),
-        ]);
+        $period->update(['processed_by' => $this->processedBy]);
     }
 }

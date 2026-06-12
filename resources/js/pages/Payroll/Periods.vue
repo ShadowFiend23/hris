@@ -127,7 +127,7 @@
               </td>
               <td class="px-6 py-4 text-sm">
                 <span :class="['inline-block rounded-full px-3 py-1 text-xs font-semibold', statusColor(period.status)]">
-                  {{ period.status }}
+                  {{ statusLabel(period.status) }}
                 </span>
               </td>
               <td class="px-6 py-4 text-sm text-gray-700">
@@ -152,7 +152,7 @@
                     Run
                   </button>
                   <button
-                    v-if="canRun && period.status === 'processing'"
+                    v-if="canRun && period.status === 'review'"
                     @click="finalizePeriod(period.id)"
                     :disabled="finalizingId === period.id"
                     class="flex items-center gap-1 rounded bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
@@ -162,7 +162,7 @@
                     Finalize
                   </button>
                   <button
-                    v-if="canRun && period.status === 'draft'"
+                    v-if="canRun && (period.status === 'draft' || period.status === 'review')"
                     @click="cancelPeriod(period.id)"
                     :disabled="cancellingId === period.id"
                     class="flex items-center gap-1 rounded border border-red-300 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
@@ -336,8 +336,15 @@ const formatPeriodType = (type: string) =>
 
 const statusColor = (status: string) => ({
   draft: 'bg-gray-100 text-gray-700',
-  processing: 'bg-blue-100 text-blue-700',
+  review: 'bg-amber-100 text-amber-700',
   finalized: 'bg-green-100 text-green-700',
   cancelled: 'bg-red-100 text-red-700',
 })[status] ?? 'bg-gray-100 text-gray-700'
+
+const statusLabel = (status: string) => ({
+  draft: 'Draft',
+  review: 'For Review',
+  finalized: 'Finalized',
+  cancelled: 'Cancelled',
+})[status] ?? status
 </script>

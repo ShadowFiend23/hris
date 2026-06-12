@@ -3,6 +3,7 @@
 use App\Modules\Core\Controllers\DashboardController;
 use App\Modules\Core\Controllers\DepartmentController;
 use App\Modules\Core\Controllers\DocsController;
+use App\Modules\Core\Controllers\EmployeeImportController;
 use App\Modules\Core\Controllers\EmployeesController;
 use App\Modules\Core\Controllers\EmployeeSettingsController;
 use App\Modules\Core\Controllers\IdentitySettingsController;
@@ -17,6 +18,10 @@ Route::middleware(['auth', 'module.access:hris'])->group(function () {
 
     // Notifications (bell) — all roles
     Route::get('/api/core/notifications', [NotificationsController::class, 'index'])->name('notifications.index');
+
+    // Employee import routes (must be before resource to avoid {employee} binding conflict)
+    Route::get('employees/import/template', [EmployeeImportController::class, 'template'])->name('employees.import.template');
+    Route::post('employees/import', [EmployeeImportController::class, 'import'])->name('employees.import');
 
     // Employee resource routes
     Route::resource('employees', EmployeesController::class)->names([

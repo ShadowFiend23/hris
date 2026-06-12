@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue'
 import AuthBase from '@/layouts/AuthLayout.vue'
-import { register } from '@/routes'
 import { store } from '@/routes/login'
 import { request } from '@/routes/password'
 import { Form, Head, Link } from '@inertiajs/vue3'
@@ -9,7 +8,6 @@ import { Form, Head, Link } from '@inertiajs/vue3'
 defineProps<{
     status?: string
     canResetPassword: boolean
-    canRegister: boolean
 }>()
 </script>
 
@@ -34,20 +32,20 @@ defineProps<{
             class="space-y-5"
         >
             <div>
-                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email address</label>
+                <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
                 <input
-                    id="email"
-                    type="email"
-                    name="email"
+                    id="username"
+                    type="text"
+                    name="username"
                     required
                     autofocus
                     :tabindex="1"
-                    autocomplete="email"
-                    placeholder="you@company.com"
+                    autocomplete="username"
+                    placeholder="j.delacruz"
                     class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                    :class="errors.email ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20' : ''"
+                    :class="errors.username ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20' : ''"
                 />
-                <InputError :message="errors.email" class="mt-1" />
+                <InputError :message="errors.username" class="mt-1" />
             </div>
 
             <div>
@@ -103,13 +101,6 @@ defineProps<{
                 </span>
                 <span v-else>Sign in</span>
             </button>
-
-            <p v-if="canRegister" class="text-center text-sm text-gray-500">
-                Don't have an account?
-                <Link :href="register()" :tabindex="5" class="font-medium text-blue-600 hover:text-blue-700">
-                    Sign up
-                </Link>
-            </p>
         </Form>
     </AuthBase>
 </template>

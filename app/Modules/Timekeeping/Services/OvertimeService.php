@@ -4,6 +4,8 @@ namespace App\Modules\Timekeeping\Services;
 
 use App\Models\User;
 use App\Modules\Core\Models\Employee;
+use App\Modules\Payroll\Models\PayrollSetting;
+use App\Modules\Payroll\Services\HolidayPayService;
 use App\Modules\Timekeeping\Models\OvertimeRecord;
 use App\Modules\Timekeeping\Models\WorkPolicy;
 use Carbon\Carbon;
@@ -13,13 +15,17 @@ use Illuminate\Support\Facades\Log;
 
 class OvertimeService
 {
+    public function __construct(
+        private readonly HolidayPayService $holidays,
+    ) {}
+
     /**
      * Create an overtime request
      */
     public function createOvertimeRequest(Employee $employee, array $data): OvertimeRecord
     {
         $date = Carbon::parse($data['date']);
-        $overtimeType = $data['overtime_type'] ?? $this->determineOvertimeType($date);
+        $overtimeType = $data['overtime_type'] ?? $this->determineOvertimeType($employee, $date);
 
         // Get pay rate multiplier from work policy
         $policy = WorkPolicy::forCompany($employee->company_id)->active()->first();
@@ -86,12 +92,21 @@ class OvertimeService
     }
 
     /**
-     * Calculate overtime pay
+     * Calculate overtime pay using the same hourly-rate basis as the payroll engine
+     * (monthly salary ÷ (work days per month × standard hours per day)).
      */
     public function calculateOvertimePay(OvertimeRecord $record, Employee $employee): float
     {
-        // Get hourly rate from employee salary (assuming monthly salary / 160 hours)
-        $hourlyRate = ($employee->salary ?? 0) / 160;
+        $policy = WorkPolicy::forCompany($employee->company_id)->active()->first();
+        $standardHours = $policy?->standard_hours_per_day ?? 8;
+        $workDaysPerMonth = PayrollSetting::where('company_id', $employee->company_id)->value('work_days_per_month') ?? 26;
+
+        $monthlySalary = $employee->salary_type === 'daily'
+            ? (float) ($employee->salary ?? 0) * $workDaysPerMonth
+            : (float) ($employee->salary ?? 0);
+
+        $divisor = $workDaysPerMonth * $standardHours;
+        $hourlyRate = $divisor > 0 ? $monthlySalary / $divisor : 0.0;
 
         return $record->calculateCompensation($hourlyRate);
     }
@@ -179,27 +194,35 @@ class OvertimeService
     }
 
     /**
-     * Determine overtime type based on date
+     * Determine overtime type for an employee on a given date: holiday takes
+     * precedence, then a rest day (a day not in the employee's shift work_days),
+     * otherwise a regular weekday.
      */
-    private function determineOvertimeType(Carbon $date): string
+    private function determineOvertimeType(Employee $employee, Carbon $date): string
     {
-        if ($date->isWeekend()) {
+        if ($this->holidays->getHolidayForDate($date, $employee->company_id)) {
+            return 'holiday';
+        }
+
+        $workDays = $employee->shiftTemplate?->work_days ?? [1, 2, 3, 4, 5];
+
+        if (! in_array((int) $date->format('N'), $workDays, true)) {
             return 'weekend';
         }
 
-        // TODO: Check against holiday list
         return 'weekday';
     }
 
     /**
-     * Get default overtime rate
+     * Get default overtime rate (DOLE-compounded fallback when no work policy exists):
+     * ordinary 125%, rest/special day 169% (1.30×1.30), regular holiday 260% (2.00×1.30).
      */
     private function getDefaultRate(string $type): float
     {
         return match ($type) {
             'weekday' => 1.25,
-            'weekend' => 1.50,
-            'holiday' => 2.00,
+            'weekend' => 1.69,
+            'holiday' => 2.60,
             default => 1.25,
         };
     }

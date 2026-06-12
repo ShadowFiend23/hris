@@ -45,7 +45,7 @@ return [
     |
     */
 
-    'username' => 'email',
+    'username' => 'username',
 
     'email' => 'email',
 
@@ -144,14 +144,10 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Registration is disabled: accounts are provisioned by admins/HR, not self-service.
+        // Two-factor authentication is disabled for now.
         Features::resetPasswords(),
         Features::emailVerification(),
-        Features::twoFactorAuthentication([
-            'confirm' => true,
-            'confirmPassword' => true,
-            // 'window' => 0
-        ]),
     ],
 
 ];

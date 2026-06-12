@@ -4,10 +4,32 @@ namespace App\Modules\Timekeeping\Services;
 
 use App\Modules\Core\Models\Employee;
 use App\Modules\Timekeeping\Models\AttendanceRecord;
+use App\Modules\Timekeeping\Models\ShiftTemplate;
 use Carbon\Carbon;
 
 class DtrService
 {
+    /**
+     * Public entry point to compute undertime (late arrival + early/long-break departure)
+     * minutes for an attendance record against its shift. Shared by payroll so the DTR
+     * and payroll deduction always agree.
+     */
+    public function undertimeMinutesForRecord(AttendanceRecord $record, ShiftTemplate $shift, Carbon $date): int
+    {
+        if (! $record->clock_in) {
+            return 0;
+        }
+
+        return $this->calculateUndertimeMinutes(
+            $record,
+            $shift->start_time,
+            $shift->end_time,
+            $shift->hasSplitShift() ? $shift->break_start_time : null,
+            $shift->hasSplitShift() ? $shift->break_end_time : null,
+            $date
+        );
+    }
+
     /**
      * Generate DTR data for a given employee and month.
      *
@@ -142,14 +164,20 @@ class DtrService
         $officialStart = Carbon::parse($date->toDateString().' '.substr($shiftStart, -8));
         $officialEnd = Carbon::parse($date->toDateString().' '.substr($shiftEnd, -8));
 
-        // Late morning arrival
+        // Overnight shift (e.g. 22:00–06:00): the official end falls on the next day,
+        // so the late-arrival and early-departure comparisons stay valid across midnight.
+        if ($officialEnd->lte($officialStart)) {
+            $officialEnd->addDay();
+        }
+
+        // Late morning arrival (abs() because Carbon 3 diffInMinutes is signed)
         if ($record->clock_in && $record->clock_in->gt($officialStart)) {
-            $undertimeMinutes += $record->clock_in->diffInMinutes($officialStart);
+            $undertimeMinutes += (int) abs($record->clock_in->diffInMinutes($officialStart));
         }
 
         // Early afternoon departure (clock_out before official end)
         if ($record->clock_out && $record->clock_out->lt($officialEnd)) {
-            $undertimeMinutes += $officialEnd->diffInMinutes($record->clock_out);
+            $undertimeMinutes += (int) abs($officialEnd->diffInMinutes($record->clock_out));
         }
 
         // For split shift: early morning departure (before break_start) and late afternoon arrival (after break_end)
@@ -158,11 +186,11 @@ class DtrService
             $officialBreakEnd = Carbon::parse($date->toDateString().' '.$breakEnd);
 
             if ($record->morning_out && $record->morning_out->lt($officialBreakStart)) {
-                $undertimeMinutes += $officialBreakStart->diffInMinutes($record->morning_out);
+                $undertimeMinutes += (int) abs($officialBreakStart->diffInMinutes($record->morning_out));
             }
 
             if ($record->afternoon_in && $record->afternoon_in->gt($officialBreakEnd)) {
-                $undertimeMinutes += $record->afternoon_in->diffInMinutes($officialBreakEnd);
+                $undertimeMinutes += (int) abs($record->afternoon_in->diffInMinutes($officialBreakEnd));
             }
         }
 

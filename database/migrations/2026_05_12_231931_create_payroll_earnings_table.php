@@ -14,17 +14,9 @@ return new class extends Migration
         Schema::create('payroll_earnings', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('payroll_item_id')->constrained('payroll_items')->cascadeOnDelete();
-            $table->enum('type', [
-                'basic',
-                'overtime',
-                'night_differential',
-                'regular_holiday',
-                'special_holiday',
-                'rest_day',
-                'thirteenth_month',
-                'allowance',
-                'other',
-            ]);
+            // Free-form: the engine emits granular types (e.g. overtime_weekday, allowance_rice,
+            // rest_day, regular_holiday). Kept as a string so no CHECK constraint blocks them.
+            $table->string('type');
             $table->decimal('hours', 6, 2)->nullable();
             $table->decimal('amount', 12, 2)->default(0);
             $table->string('description')->nullable();

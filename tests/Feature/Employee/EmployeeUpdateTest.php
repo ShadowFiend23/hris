@@ -6,7 +6,9 @@ use App\Models\User;
 use App\Modules\Core\Models\Company;
 use App\Modules\Core\Models\Department;
 use App\Modules\Core\Models\Employee;
+use App\Modules\Core\Models\Permission;
 use App\Modules\Core\Models\Position;
+use App\Modules\Core\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Tests\Traits\WithModuleAccess;
@@ -33,6 +35,7 @@ class EmployeeUpdateTest extends TestCase
         $this->company = Company::factory()->create();
         $this->setupModuleAccess($this->company->id);
         $this->user = User::factory()->create(['company_id' => $this->company->id]);
+        $this->grantEmployeeEditPermission($this->user);
         $this->department = Department::create([
             'company_id' => $this->company->id,
             'name' => 'Engineering',
@@ -49,6 +52,21 @@ class EmployeeUpdateTest extends TestCase
             'department_id' => $this->department->id,
             'position_id' => $this->position->id,
         ]);
+    }
+
+    /**
+     * Grant the user the permission required by EmployeePolicy::update.
+     */
+    private function grantEmployeeEditPermission(User $user): void
+    {
+        $role = Role::create(['name' => 'Employee Editor', 'slug' => 'employee-editor-'.uniqid()]);
+        $permission = Permission::firstOrCreate(
+            ['slug' => 'hris.employees.edit'],
+            ['name' => 'Edit Employees', 'slug' => 'hris.employees.edit', 'group' => 'hris']
+        );
+        $role->permissions()->attach($permission->id);
+        $user->roles()->attach($role->id);
+        $user->load('roles.permissions');
     }
 
     public function test_can_update_employee_basic_info(): void

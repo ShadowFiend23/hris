@@ -22,12 +22,20 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $firstName = fake()->firstName();
+        $lastName = fake()->lastName();
+        $firstInitial = strtolower(mb_substr($firstName, 0, 1));
+        $lastNameSlug = strtolower(preg_replace('/[^a-z0-9]/i', '', $lastName));
+        $baseUsername = $firstInitial.'.'.$lastNameSlug;
+
         return [
-            'name' => fake()->name(),
+            'name' => $firstName.' '.$lastName,
+            'username' => fake()->unique()->numerify($baseUsername.'###'),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= 'password',
             'remember_token' => Str::random(10),
+            'must_change_password' => false,
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,

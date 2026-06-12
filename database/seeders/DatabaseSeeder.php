@@ -104,6 +104,7 @@ class DatabaseSeeder extends Seeder
         // Create test user 1
         $user = User::factory()->create([
             'name' => 'Test User',
+            'username' => 'test',
             'email' => 'test@example.com',
             'password' => bcrypt('password'),
             'company_id' => $company->id,
@@ -119,6 +120,7 @@ class DatabaseSeeder extends Seeder
         // Create test user 2 (admin2)
         $user2 = User::factory()->create([
             'name' => 'Admin User',
+            'username' => 'admin',
             'email' => 'admin@example.com',
             'password' => bcrypt('password'),
             'company_id' => $company->id,
@@ -225,5 +227,11 @@ class DatabaseSeeder extends Seeder
 
         // Seed employee loans (SSS, Pag-IBIG, company) and enable loan deductions
         $this->call(EmployeeLoanSeeder::class);
+
+        // Seed approved overtime records (weekday / rest day / holiday)
+        $this->call(OvertimeSeeder::class);
+
+        // Seed approved paid leave + leave without pay
+        $this->call(LeaveSeeder::class);
     }
 }

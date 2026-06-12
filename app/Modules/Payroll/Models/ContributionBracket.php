@@ -8,6 +8,7 @@ class ContributionBracket extends Model
 {
     protected $fillable = [
         'type',
+        'period',
         'effective_date',
         'min_salary',
         'max_salary',

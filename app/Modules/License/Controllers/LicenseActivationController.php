@@ -58,6 +58,9 @@ class LicenseActivationController extends Controller
             $response = Http::withoutVerifying()->timeout(15)->post($endpoint, [
                 'license_key' => $request->string('license_key')->toString(),
                 'hardware_hash' => $hardwareHash,
+                'machine_id_hash' => $this->fingerprint->getMachineIdHash(),
+                'mac_hash' => $this->fingerprint->getMacHash(),
+                'disk_serial_hash' => $this->fingerprint->getDiskSerialHash(),
                 'hostname' => $this->fingerprint->getHostname(),
             ]);
         } catch (\Exception) {
@@ -94,7 +97,7 @@ class LicenseActivationController extends Controller
             return back()->withErrors(['license_key' => 'License signature verification failed. The response may have been tampered with.']);
         }
 
-        if (($licenseData['hardware_hash'] ?? '') !== $hardwareHash) {
+        if (! $this->licenseFile->hardwareMatches($licenseData)) {
             return back()->withErrors(['license_key' => 'This license key is bound to a different server.']);
         }
 

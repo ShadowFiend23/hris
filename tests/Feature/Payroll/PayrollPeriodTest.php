@@ -192,13 +192,15 @@ class PayrollPeriodTest extends TestCase
             ->assertStatus(403);
     }
 
-    public function test_cannot_cancel_a_processing_period(): void
+    public function test_can_cancel_a_period_under_review(): void
     {
-        $period = $this->createPeriod('2026-05-01', '2026-05-15', 'processing');
+        $period = $this->createPeriod('2026-05-01', '2026-05-15', 'review');
 
         $this->actingAs($this->user)
             ->post("/payroll/periods/{$period->id}/cancel")
-            ->assertStatus(403);
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('payroll_periods', ['id' => $period->id, 'status' => 'cancelled']);
     }
 
     // ───────── Delete ─────────
@@ -236,9 +238,9 @@ class PayrollPeriodTest extends TestCase
         $this->assertDatabaseHas('payroll_periods', ['id' => $period->id]);
     }
 
-    public function test_cannot_delete_a_processing_period(): void
+    public function test_cannot_delete_a_period_under_review(): void
     {
-        $period = $this->createPeriod('2026-05-01', '2026-05-15', 'processing');
+        $period = $this->createPeriod('2026-05-01', '2026-05-15', 'review');
 
         $this->actingAs($this->user)
             ->delete("/payroll/periods/{$period->id}")

@@ -4,8 +4,10 @@ namespace Tests\Feature\Payroll;
 
 use App\Models\User;
 use App\Modules\Core\Models\Company;
+use App\Modules\Core\Models\Employee;
 use App\Modules\Core\Models\Permission;
 use App\Modules\Core\Models\Role;
+use App\Modules\Payroll\Models\PayrollSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -76,15 +78,36 @@ class PayrollRbacTest extends TestCase
     {
         $user = $this->userWithPermissions(['payroll.run']);
 
-        $response = $this->actingAs($user)->post('/payroll/periods', [
-            'start_date' => '2025-06-01',
-            'end_date' => '2025-06-15',
-            'pay_date' => '2025-06-20',
-            'payroll_setting_id' => null, // no setting; form request will reject
+        // The store action derives the company from the acting user's employee record
+        // and auto-generates the period from that company's payroll setting.
+        Employee::factory()->create(['user_id' => $user->id, 'company_id' => $this->company->id]);
+        PayrollSetting::create([
+            'company_id' => $this->company->id,
+            'period_type' => 'semi_monthly',
+            'pay_day_1' => 15,
+            'pay_day_2' => 30,
+            'work_days_per_month' => 26,
+            'cutoff_offset_days' => 15,
+            'is_active' => true,
         ]);
 
-        // Without a valid payroll_setting_id it should redirect with errors, not 403
-        $response->assertSessionHasErrors(['payroll_setting_id']);
+        $response = $this->actingAs($user)->post('/payroll/periods', [
+            'pay_date' => '2026-06-20',
+        ]);
+
+        // payroll.run is authorized (not 403) and the period is created.
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect();
+        $this->assertDatabaseHas('payroll_periods', ['company_id' => $this->company->id]);
+    }
+
+    public function test_user_with_payroll_run_sees_validation_error_for_missing_pay_date(): void
+    {
+        $user = $this->userWithPermissions(['payroll.run']);
+
+        // Authorized, but pay_date is required by the form request.
+        $this->actingAs($user)->post('/payroll/periods', [])
+            ->assertSessionHasErrors(['pay_date']);
     }
 
     public function test_user_without_payroll_run_cannot_create_period(): void

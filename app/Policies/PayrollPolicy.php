@@ -62,9 +62,11 @@ class PayrollPolicy
 
     public function cancel(User $user, PayrollPeriod $period): bool
     {
+        // A period can be cancelled while it is still a draft or under review
+        // (loan balances are only committed at finalization, so nothing is locked yet).
         return $user->hasPermission('payroll.run')
             && (int) $period->company_id === (int) $user->employee?->company_id
-            && $period->status === 'draft';
+            && in_array($period->status, ['draft', 'review'], true);
     }
 
     public function deletePeriod(User $user, PayrollPeriod $period): bool

@@ -15,7 +15,7 @@
         </div>
         <div class="flex items-center gap-3">
           <span :class="['rounded-full px-4 py-1.5 text-sm font-semibold', statusColor(period.status)]">
-            {{ period.status }}
+            {{ statusLabel(period.status) }}
           </span>
           <button
             v-if="canRun && period.status === 'draft'"
@@ -28,7 +28,7 @@
             Run Payroll
           </button>
           <button
-            v-if="canRun && period.status === 'processing'"
+            v-if="canRun && period.status === 'review'"
             @click="finalizePeriod"
             :disabled="finalizing"
             class="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
@@ -36,6 +36,16 @@
             <Loader2 v-if="finalizing" :size="16" class="animate-spin" />
             <CheckCircle v-else :size="16" />
             Finalize
+          </button>
+          <button
+            v-if="canRun && (period.status === 'draft' || period.status === 'review')"
+            @click="cancelPeriod"
+            :disabled="cancelling"
+            class="flex items-center gap-2 rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+          >
+            <Loader2 v-if="cancelling" :size="16" class="animate-spin" />
+            <X v-else :size="16" />
+            Cancel
           </button>
         </div>
       </div>
@@ -162,7 +172,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { Link, usePage, router } from '@inertiajs/vue3'
-import { ChevronLeft, Play, CheckCircle, Loader2, Users } from 'lucide-vue-next'
+import { ChevronLeft, Play, CheckCircle, Loader2, Users, X } from 'lucide-vue-next'
 import Layout from '@/components/Layout.vue'
 
 interface Employee {
@@ -232,6 +242,15 @@ const finalizePeriod = () => {
   })
 }
 
+const cancelling = ref(false)
+const cancelPeriod = () => {
+  if (!confirm('Cancel this payroll period? Generated payslips will be discarded.')) return
+  cancelling.value = true
+  router.post(`/payroll/periods/${props.period.id}/cancel`, {}, {
+    onFinish: () => { cancelling.value = false },
+  })
+}
+
 const formatDate = (date: string) =>
   new Date(date).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })
 
@@ -241,8 +260,16 @@ const formatPeso = (amount: number) =>
 const statusColor = (status: string) =>
   ({
     draft: 'bg-gray-100 text-gray-700',
-    processing: 'bg-blue-100 text-blue-700',
+    review: 'bg-amber-100 text-amber-700',
     finalized: 'bg-green-100 text-green-700',
     cancelled: 'bg-red-100 text-red-700',
   })[status] ?? 'bg-gray-100 text-gray-700'
+
+const statusLabel = (status: string) =>
+  ({
+    draft: 'Draft',
+    review: 'For Review',
+    finalized: 'Finalized',
+    cancelled: 'Cancelled',
+  })[status] ?? status
 </script>

@@ -109,7 +109,7 @@ class GenerateHistoricPayroll extends Command
             PayrollPeriod::where('company_id', $setting->company_id)
                 ->where('start_date', $periodDates['start_date']->toDateString())
                 ->where('end_date', $periodDates['end_date']->toDateString())
-                ->whereIn('status', ['draft', 'processing'])
+                ->whereIn('status', ['draft', 'review'])
                 ->delete();
 
             $period = PayrollPeriod::create([

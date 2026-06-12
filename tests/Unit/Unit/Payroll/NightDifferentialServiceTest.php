@@ -54,4 +54,16 @@ class NightDifferentialServiceTest extends TestCase
         $ndPay = $this->service->compute($clockIn, $clockOut, 100.0);
         $this->assertEqualsWithDelta(20.0, $ndPay, 0.01);
     }
+
+    public function test_break_is_excluded_and_capped_at_worked_hours(): void
+    {
+        // 22:00–06:00 is 8h in the band, but a 60-min break leaves only 7h worked.
+        $clockIn = Carbon::parse('2026-05-13 22:00:00');
+        $clockOut = Carbon::parse('2026-05-14 06:00:00');
+
+        $ndHours = $this->service->computeNightHours($clockIn, $clockOut, 60, 7.0);
+
+        $this->assertSame(7.0, $ndHours);
+        $this->assertLessThanOrEqual(7.0, $ndHours);
+    }
 }

@@ -3,20 +3,21 @@
   All passwords: password
 ===================================================================
 
-ADMIN (1)
+ADMIN (2)
 -------------------------------------------------------------------
-  test@example.com          password    (Admin User)
+  test@example.com           test     password    (Test User)
+  admin@example.com          admin    password    (Admin User)
 
 MANAGER (3)
 -------------------------------------------------------------------
-  ricardo.santos@testcompany.com   password    EMP-003 Ricardo Santos   - IT Director
-  maria.reyes@testcompany.com      password    EMP-004 Maria Reyes      - Operations Director
-  jose.cruz@testcompany.com        password    EMP-005 Jose Cruz        - IT Team Lead
+  ricardo.santos@testcompany.com   r.santos    password    EMP-003 Ricardo Santos   - IT Director
+  maria.reyes@testcompany.com      m.reyes     password    EMP-004 Maria Reyes      - Operations Director
+  jose.cruz@testcompany.com        j.cruz      password    EMP-005 Jose Cruz        - IT Team Lead
 
 EMPLOYEE (3)
 -------------------------------------------------------------------
-  carlo.mendoza@testcompany.com    password    EMP-009 Carlo Mendoza    - Developer
-  patricia.garcia@testcompany.com  password    EMP-010 Patricia Garcia  - Developer
-  michael.torres@testcompany.com   password    EMP-011 Michael Torres   - Developer
+  carlo.mendoza@testcompany.com    c.mendoza    password    EMP-009 Carlo Mendoza    - Developer
+  patricia.garcia@testcompany.com  p.garcia     password    EMP-010 Patricia Garcia  - Developer
+  michael.torres@testcompany.com   m.torres     password    EMP-011 Michael Torres   - Developer
 
 ===================================================================

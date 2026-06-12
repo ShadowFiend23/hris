@@ -20,6 +20,10 @@ class WorkPolicy extends Model
         'weekday_overtime_rate',
         'weekend_overtime_rate',
         'holiday_overtime_rate',
+        'night_differential_rate',
+        'regular_holiday_rate',
+        'special_holiday_rate',
+        'rest_day_rate',
         'is_active',
     ];
 
@@ -34,6 +38,10 @@ class WorkPolicy extends Model
             'weekday_overtime_rate' => 'decimal:2',
             'weekend_overtime_rate' => 'decimal:2',
             'holiday_overtime_rate' => 'decimal:2',
+            'night_differential_rate' => 'decimal:2',
+            'regular_holiday_rate' => 'decimal:2',
+            'special_holiday_rate' => 'decimal:2',
+            'rest_day_rate' => 'decimal:2',
             'is_active' => 'boolean',
         ];
     }

@@ -13,8 +13,8 @@ use Illuminate\Database\Seeder;
 class AttendanceSeeder extends Seeder
 {
     private const SHIFT_ROTATION = [
-        'Morning Shift',
         'Regular Day Shift',
+        'Morning Shift',
         'Afternoon Shift',
         'Night Shift',
         'Flexible Hours',
@@ -32,20 +32,21 @@ class AttendanceSeeder extends Seeder
 
         $employees = Employee::where('company_id', $company->id)
             ->where('is_active', true)
+            ->orderBy('id')
             ->get();
 
-        $rotationIndex = 0;
-
-        // Assign a random number of absences to ~35% of employees for realistic payroll data
+        // ~35% of employees accrue a few random absences for realistic payroll data.
         $employeeIds = $employees->pluck('id')->toArray();
         $absenteeCount = (int) ceil(count($employeeIds) * 0.35);
         $absenteeIds = array_slice($employeeIds, 0, $absenteeCount);
-        shuffle($absenteeIds);
+
+        $rotationIndex = 0;
+        $index = 0;
 
         foreach ($employees as $employee) {
-            $hadExistingShift = $employee->shift_template_id !== null;
-            $shift = $shiftTemplates->first(fn ($s) => $s->id === $employee->shift_template_id);
+            $shift = $shiftTemplates->firstWhere('id', $employee->shift_template_id);
 
+            // Fallback only if the employee was never assigned a shift.
             if (! $shift) {
                 $shiftName = self::SHIFT_ROTATION[$rotationIndex % count(self::SHIFT_ROTATION)];
                 $shift = $shiftTemplates->firstWhere('name', $shiftName);
@@ -61,56 +62,78 @@ class AttendanceSeeder extends Seeder
                 continue;
             }
 
-            // Only generate year schedules for employees that didn't already have one;
-            // existing employees (e.g. EMP-001, EMP-002) are covered by TimekeepingSeeder.
-            if (! $hadExistingShift) {
-                $this->generateYearSchedules($employee, $shift);
-            }
+            $this->generateYearSchedules($employee, $shift);
 
-            $maxAbsences = in_array($employee->id, $absenteeIds) ? rand(2, 4) : 0;
-            $this->createAttendanceRecords($employee, $shift, $maxAbsences);
+            $maxAbsences = in_array($employee->id, $absenteeIds) ? 2 + ($employee->id % 3) : 0;
+            $withHalfDay = $index % 5 === 2;       // ~1 in 5 gets a half day
+            $withExplicitAbsent = $index % 5 === 4; // ~1 in 5 gets an explicit absent record
+
+            $this->createAttendanceRecords($employee, $shift, $maxAbsences, $withHalfDay, $withExplicitAbsent);
+            $index++;
         }
     }
 
-    private function createAttendanceRecords(Employee $employee, ShiftTemplate $shift, int $maxAbsences = 0): void
-    {
+    private function createAttendanceRecords(
+        Employee $employee,
+        ShiftTemplate $shift,
+        int $maxAbsences,
+        bool $withHalfDay,
+        bool $withExplicitAbsent
+    ): void {
         $startHour = (int) $shift->start_time->format('H');
         $startMinute = (int) $shift->start_time->format('i');
         $endHour = (int) $shift->end_time->format('H');
         $endMinute = (int) $shift->end_time->format('i');
 
-        // Night Shift (e.g. 22:00–06:00) — clock_out lands on the next calendar day
+        // Night Shift (e.g. 22:00–06:00) — clock_out lands on the next calendar day.
         $crossesMidnight = $startHour > $endHour;
 
         $workDays = $shift->work_days ?? [1, 2, 3, 4, 5];
         $breakDuration = $shift->break_duration ?? 60;
 
+        // Deterministic absence work-day indices (idempotent across re-runs).
+        $absenceIndices = array_slice([7, 17, 27, 37], 0, $maxAbsences);
+
         $date = Carbon::now()->subDays(self::DAYS_TO_SEED)->startOfDay();
         $today = Carbon::now()->startOfDay();
-        $absencesCreated = 0;
+        $workDayIndex = 0;
 
         while ($date <= $today) {
             $dayOfWeek = (int) $date->format('N'); // 1=Mon … 7=Sun
 
             if (in_array($dayOfWeek, $workDays)) {
-                // Randomly skip work days to simulate absences, spread across the seeded window
-                if ($absencesCreated < $maxAbsences && rand(1, self::DAYS_TO_SEED) <= $maxAbsences * 3) {
-                    $absencesCreated++;
+                // Deterministic half-day on the 2nd work day.
+                if ($withHalfDay && $workDayIndex === 1) {
+                    $this->createHalfDay($employee, $date, $startHour, $startMinute, $breakDuration);
+                    $workDayIndex++;
+                    $date->addDay();
+
+                    continue;
+                }
+
+                // Deterministic explicit absence on the 3rd work day.
+                if ($withExplicitAbsent && $workDayIndex === 2) {
+                    $this->createAbsent($employee, $date);
+                    $workDayIndex++;
+                    $date->addDay();
+
+                    continue;
+                }
+
+                // Deterministic no-record absences for absentee employees.
+                if (in_array($workDayIndex, $absenceIndices, true)) {
+                    $workDayIndex++;
                     $date->addDay();
 
                     continue;
                 }
 
                 $clockInVariance = rand(-5, 30);
-
-                $clockIn = $date->copy()
-                    ->setTime($startHour, $startMinute, 0)
-                    ->addMinutes($clockInVariance);
+                $clockIn = $date->copy()->setTime($startHour, $startMinute, 0)->addMinutes($clockInVariance);
 
                 $clockOutBase = $crossesMidnight
                     ? $date->copy()->addDay()->setTime($endHour, $endMinute, 0)
                     : $date->copy()->setTime($endHour, $endMinute, 0);
-
                 $clockOut = $clockOutBase->addMinutes(rand(-15, 45));
 
                 $totalMinutes = $clockIn->diffInMinutes($clockOut) - $breakDuration;
@@ -119,17 +142,10 @@ class AttendanceSeeder extends Seeder
                 $scheduledStart = $date->copy()->setTime($startHour, $startMinute, 0);
                 $status = $clockIn->gt($scheduledStart->copy()->addMinutes(15)) ? 'late' : 'present';
 
-                // Pass a Carbon instance (not a date string) so the PDO binding formats
-                // as 'Y-m-d H:i:s', matching how Eloquent's date cast serializes for storage.
                 AttendanceRecord::firstOrCreate(
+                    ['employee_id' => $employee->id, 'date' => $date->copy()],
                     [
-                        'employee_id' => $employee->id,
-                        'date' => $date->copy(),
-                    ],
-                    [
-                        'employee_id' => $employee->id,
                         'company_id' => $employee->company_id,
-                        'date' => $date->copy(),
                         'clock_in' => $clockIn,
                         'clock_out' => $clockOut,
                         'total_hours' => $totalHours,
@@ -138,10 +154,48 @@ class AttendanceSeeder extends Seeder
                         'source' => 'manual',
                     ]
                 );
+
+                $workDayIndex++;
             }
 
             $date->addDay();
         }
+    }
+
+    private function createHalfDay(Employee $employee, Carbon $date, int $startHour, int $startMinute, int $breakDuration): void
+    {
+        $clockIn = $date->copy()->setTime($startHour, $startMinute, 0);
+        $clockOut = $clockIn->copy()->addHours(4);
+        $totalHours = round(max((4 * 60) - $breakDuration, 0) / 60, 2);
+
+        AttendanceRecord::firstOrCreate(
+            ['employee_id' => $employee->id, 'date' => $date->copy()],
+            [
+                'company_id' => $employee->company_id,
+                'clock_in' => $clockIn,
+                'clock_out' => $clockOut,
+                'total_hours' => $totalHours,
+                'break_duration' => $breakDuration,
+                'status' => 'half_day',
+                'source' => 'manual',
+            ]
+        );
+    }
+
+    private function createAbsent(Employee $employee, Carbon $date): void
+    {
+        AttendanceRecord::firstOrCreate(
+            ['employee_id' => $employee->id, 'date' => $date->copy()],
+            [
+                'company_id' => $employee->company_id,
+                'clock_in' => null,
+                'clock_out' => null,
+                'total_hours' => 0,
+                'break_duration' => 0,
+                'status' => 'absent',
+                'source' => 'manual',
+            ]
+        );
     }
 
     private function generateYearSchedules(Employee $employee, ShiftTemplate $shift): void
@@ -157,20 +211,20 @@ class AttendanceSeeder extends Seeder
             $dayOfWeek = (int) $current->format('N');
 
             if (in_array($dayOfWeek, $workDays)) {
-                EmployeeSchedule::firstOrCreate(
-                    [
+                $exists = EmployeeSchedule::where('employee_id', $employee->id)
+                    ->whereDate('date', $current->toDateString())
+                    ->exists();
+
+                if (! $exists) {
+                    EmployeeSchedule::create([
                         'employee_id' => $employee->id,
                         'date' => $current->toDateString(),
-                    ],
-                    [
-                        'employee_id' => $employee->id,
                         'shift_template_id' => $shift->id,
-                        'date' => $current->toDateString(),
                         'start_time' => $startTime,
                         'end_time' => $endTime,
                         'status' => 'scheduled',
-                    ]
-                );
+                    ]);
+                }
             }
 
             $current->addDay();

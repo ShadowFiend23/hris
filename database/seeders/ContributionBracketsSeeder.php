@@ -131,7 +131,7 @@ class ContributionBracketsSeeder extends Seeder
                 [
                     'type' => 'pagibig',
                     'effective_date' => $today,
-                    'min_salary' => 0,
+                    'min_salary' => 0.00,
                     'max_salary' => 1500.00,
                     'employee_rate' => 0.01,
                     'employer_rate' => 0.02,
@@ -178,6 +178,7 @@ class ContributionBracketsSeeder extends Seeder
             foreach ($taxBrackets as $b) {
                 ContributionBracket::create([
                     'type' => 'tax',
+                    'period' => null,
                     'effective_date' => $today,
                     'min_salary' => $b['min'],
                     'max_salary' => null,
@@ -188,6 +189,59 @@ class ContributionBracketsSeeder extends Seeder
                     'min_contribution' => null,
                     'max_contribution' => null,
                     'notes' => $b['note'],
+                    'is_active' => true,
+                ]);
+            }
+        }
+
+        // BIR Revised Withholding Tax Tables (effective 2023) — withheld each payroll run.
+        // Each row: [floor, base_tax, marginal_rate].
+        $periodTables = [
+            'semi_monthly' => [
+                [0, 0, 0],
+                [10417, 0, 0.15],
+                [16667, 937.50, 0.20],
+                [33333, 4270.70, 0.25],
+                [83333, 16770.70, 0.30],
+                [333333, 91770.70, 0.35],
+            ],
+            'monthly' => [
+                [0, 0, 0],
+                [20833, 0, 0.15],
+                [33333, 1875.00, 0.20],
+                [66667, 8541.80, 0.25],
+                [166667, 33541.80, 0.30],
+                [666667, 183541.80, 0.35],
+            ],
+            'weekly' => [
+                [0, 0, 0],
+                [4808, 0, 0.15],
+                [7692, 432.60, 0.20],
+                [15385, 1971.20, 0.25],
+                [38462, 7740.45, 0.30],
+                [153846, 42355.65, 0.35],
+            ],
+        ];
+
+        foreach ($periodTables as $period => $rows) {
+            if (ContributionBracket::where('type', 'tax')->where('period', $period)->where('is_active', true)->exists()) {
+                continue;
+            }
+
+            foreach ($rows as [$min, $base, $rate]) {
+                ContributionBracket::create([
+                    'type' => 'tax',
+                    'period' => $period,
+                    'effective_date' => $today,
+                    'min_salary' => $min,
+                    'max_salary' => null,
+                    'employee_rate' => $rate,
+                    'employer_rate' => null,
+                    'employee_amount' => $base,
+                    'employer_amount' => null,
+                    'min_contribution' => null,
+                    'max_contribution' => null,
+                    'notes' => "BIR revised withholding tax ({$period})",
                     'is_active' => true,
                 ]);
             }

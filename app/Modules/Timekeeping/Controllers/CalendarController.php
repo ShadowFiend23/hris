@@ -129,7 +129,7 @@ class CalendarController extends Controller
                     'date' => $current->toDateString(),
                     'type' => 'holiday',
                     'label' => self::PH_HOLIDAYS[$key],
-                    'detail' => 'Public Holiday',
+                    'detail' => self::PH_HOLIDAYS[$key],
                     'color' => 'rose',
                 ];
             }

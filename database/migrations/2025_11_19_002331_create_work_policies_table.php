@@ -19,8 +19,8 @@ return new class extends Migration
             $table->integer('late_threshold_minutes')->default(15);
             $table->integer('grace_period_minutes')->default(5);
             $table->decimal('weekday_overtime_rate', 3, 2)->default(1.25);
-            $table->decimal('weekend_overtime_rate', 3, 2)->default(1.50);
-            $table->decimal('holiday_overtime_rate', 3, 2)->default(2.00);
+            $table->decimal('weekend_overtime_rate', 3, 2)->default(1.69);
+            $table->decimal('holiday_overtime_rate', 3, 2)->default(2.60);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 

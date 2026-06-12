@@ -10,17 +10,37 @@ use App\Modules\Core\Models\Position;
 use App\Modules\Core\Models\Role;
 use App\Modules\Timekeeping\Models\LeaveBalance;
 use App\Modules\Timekeeping\Models\LeaveType;
+use App\Modules\Timekeeping\Models\ShiftTemplate;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class EmployeeSeeder extends Seeder
 {
+    /** @var string[] */
+    private array $usedUsernames = ['test', 'admin'];
+
+    private const SHIFT_ROTATION = [
+        'Regular Day Shift',
+        'Morning Shift',
+        'Afternoon Shift',
+        'Night Shift',
+        'Flexible Hours',
+    ];
+
+    /** @var array<string, int> */
+    private array $shiftIds = [];
+
+    private int $shiftCursor = 0;
+
     public function run(): void
     {
         $company = Company::where('slug', 'test-company')->firstOrFail();
-        $adminRole = Role::where('slug', 'admin')->firstOrFail();
         $managerRole = Role::where('slug', 'manager')->firstOrFail();
         $employeeRole = Role::where('slug', 'employee')->firstOrFail();
+
+        $this->shiftIds = ShiftTemplate::where('company_id', $company->id)
+            ->pluck('id', 'name')
+            ->toArray();
 
         // --- Departments ---
         $itDept = Department::create([
@@ -214,6 +234,23 @@ class EmployeeSeeder extends Seeder
             'supervisor_id' => $emp008->id,
         ]);
 
+        // --- Daily-paid employees (exercise the daily-rate payroll path) ---
+        $this->createEmployee($company, $opsDept, $posOpsAssociate, $employeeRole, [
+            'employee_id' => 'EMP-023', 'first_name' => 'Diego', 'last_name' => 'Mercado',
+            'alpeta_employee_id' => '2130', 'salary' => 900, 'salary_type' => 'daily',
+            'gender' => 'male', 'date_of_birth' => '1994-02-20',
+            'employment_type' => 'full_time', 'date_hired' => now()->subMonths(6),
+            'supervisor_id' => $emp008->id, 'shift' => 'Regular Day Shift',
+        ]);
+
+        $this->createEmployee($company, $opsDept, $posOpsAssociate, $employeeRole, [
+            'employee_id' => 'EMP-024', 'first_name' => 'Elena', 'last_name' => 'Salvador',
+            'alpeta_employee_id' => '2131', 'salary' => 850, 'salary_type' => 'daily',
+            'gender' => 'female', 'date_of_birth' => '1995-12-12',
+            'employment_type' => 'full_time', 'date_hired' => now()->subMonths(5),
+            'supervisor_id' => $emp008->id, 'shift' => 'Morning Shift',
+        ]);
+
         // --- Set department managers (after employees are created) ---
         $itDept->update(['manager_id' => $emp003->id]);
         $opsDept->update(['manager_id' => $emp004->id]);
@@ -234,11 +271,27 @@ class EmployeeSeeder extends Seeder
         }
     }
 
+    private function generateUsername(string $firstName, string $lastName): string
+    {
+        $firstInitial = strtolower(mb_substr($firstName, 0, 1));
+        $lastNameSlug = strtolower(preg_replace('/[^a-z0-9]/i', '', $lastName));
+        $base = $firstInitial.'.'.$lastNameSlug;
+        $username = $base;
+        $counter = 2;
+        while (in_array($username, $this->usedUsernames)) {
+            $username = $base.$counter;
+            $counter++;
+        }
+        $this->usedUsernames[] = $username;
+
+        return $username;
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */
     private function createEmployee(
-        \App\Modules\Core\Models\Company $company,
+        Company $company,
         Department $department,
         Position $position,
         Role $role,
@@ -247,9 +300,11 @@ class EmployeeSeeder extends Seeder
         $firstName = $data['first_name'];
         $lastName = $data['last_name'];
         $email = strtolower(str_replace(' ', '', $firstName)).'.'.strtolower(str_replace(' ', '', $lastName)).'@testcompany.com';
+        $username = $this->generateUsername($firstName, $lastName);
 
         $user = User::create([
             'name' => "{$firstName} {$lastName}",
+            'username' => $username,
             'email' => $email,
             'password' => Hash::make('password'),
             'company_id' => $company->id,
@@ -257,6 +312,9 @@ class EmployeeSeeder extends Seeder
         ]);
 
         $user->roles()->attach($role->id);
+
+        $shiftName = $data['shift'] ?? self::SHIFT_ROTATION[$this->shiftCursor++ % count(self::SHIFT_ROTATION)];
+        $shiftId = $this->shiftIds[$shiftName] ?? null;
 
         $employee = Employee::create([
             'user_id' => $user->id,
@@ -279,7 +337,8 @@ class EmployeeSeeder extends Seeder
             'employment_status' => 'active',
             'employment_type' => $data['employment_type'] ?? 'full_time',
             'salary' => $data['salary'],
-            'salary_type' => 'monthly',
+            'salary_type' => $data['salary_type'] ?? 'monthly',
+            'shift_template_id' => $shiftId,
             'alpeta_employee_id' => $data['alpeta_employee_id'],
             'is_active' => true,
             'supervisor_id' => $data['supervisor_id'] ?? null,

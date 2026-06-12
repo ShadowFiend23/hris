@@ -87,14 +87,43 @@ class LicenseFile
     }
 
     /**
-     * Check that the hardware_hash in the license matches the current machine.
+     * Tiered hardware check: machine ID hash → MAC hash → disk serial hash.
+     * Any single match is sufficient. This tolerates individual component replacements.
+     *
+     * Falls back to checking the legacy combined `hardware_hash` field for licenses
+     * issued by servers that have not yet been updated to emit individual hashes.
      *
      * @param  array<string, mixed>  $data
      */
     public function hardwareMatches(array $data): bool
     {
-        return isset($data['hardware_hash'])
-            && hash_equals($data['hardware_hash'], $this->fingerprint->generate());
+        if (! empty($data['machine_id_hash'])) {
+            $machineIdHash = $this->fingerprint->getMachineIdHash();
+            if ($machineIdHash !== '' && hash_equals($data['machine_id_hash'], $machineIdHash)) {
+                return true;
+            }
+        }
+
+        if (! empty($data['mac_hash'])) {
+            $macHash = $this->fingerprint->getMacHash();
+            if ($macHash !== '' && hash_equals($data['mac_hash'], $macHash)) {
+                return true;
+            }
+        }
+
+        if (! empty($data['disk_serial_hash'])) {
+            $diskSerialHash = $this->fingerprint->getDiskSerialHash();
+            if ($diskSerialHash !== '' && hash_equals($data['disk_serial_hash'], $diskSerialHash)) {
+                return true;
+            }
+        }
+
+        // Legacy: server returned a single combined hardware_hash
+        if (! empty($data['hardware_hash'])) {
+            return hash_equals($data['hardware_hash'], $this->fingerprint->generate());
+        }
+
+        return false;
     }
 
     /**
