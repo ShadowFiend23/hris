@@ -49,10 +49,12 @@ class ReportController extends Controller
     public function leave(Request $request): JsonResponse
     {
         $request->validate([
-            'year' => 'required|integer|min:2020|max:2099',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
             'status' => 'nullable|in:pending,approved,rejected,cancelled',
             'leave_type_id' => 'nullable|exists:leave_types,id',
             'department_id' => 'nullable|exists:departments,id',
+            'employee_id' => 'nullable|exists:employees,id',
         ]);
 
         $companyId = $request->user()->employee?->company_id;
@@ -63,8 +65,9 @@ class ReportController extends Controller
 
         $report = $this->reportService->generateLeaveReport(
             $companyId,
-            $request->year,
-            $request->only(['status', 'leave_type_id', 'department_id'])
+            Carbon::parse($request->start_date),
+            Carbon::parse($request->end_date),
+            $request->only(['status', 'leave_type_id', 'department_id', 'employee_id'])
         );
 
         return response()->json($report);
@@ -81,6 +84,7 @@ class ReportController extends Controller
             'status' => 'nullable|in:pending,approved,rejected,paid',
             'overtime_type' => 'nullable|in:weekday,weekend,holiday',
             'department_id' => 'nullable|exists:departments,id',
+            'employee_id' => 'nullable|exists:employees,id',
         ]);
 
         $companyId = $request->user()->employee?->company_id;
@@ -93,7 +97,7 @@ class ReportController extends Controller
             $companyId,
             Carbon::parse($request->start_date),
             Carbon::parse($request->end_date),
-            $request->only(['status', 'overtime_type', 'department_id'])
+            $request->only(['status', 'overtime_type', 'department_id', 'employee_id'])
         );
 
         return response()->json($report);

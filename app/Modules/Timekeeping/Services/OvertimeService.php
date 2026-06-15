@@ -20,12 +20,26 @@ class OvertimeService
     ) {}
 
     /**
-     * Create an overtime request
+     * Create an overtime request from a time-in / time-out window.
+     *
+     * Expects `start_date`, `start_time`, `end_date`, `end_time` (the time-out
+     * may fall on the next day for overnight overtime). Worked hours and the
+     * overtime type are derived; nothing is taken from the user for those.
+     *
+     * @param  array{start_date:string,start_time:string,end_date:string,end_time:string,reason?:string|null}  $data
      */
     public function createOvertimeRequest(Employee $employee, array $data): OvertimeRecord
     {
-        $date = Carbon::parse($data['date']);
-        $overtimeType = $data['overtime_type'] ?? $this->determineOvertimeType($employee, $date);
+        $startAt = Carbon::parse($data['start_date'].' '.$data['start_time']);
+        $endAt = Carbon::parse($data['end_date'].' '.$data['end_time']);
+
+        if ($endAt->lessThanOrEqualTo($startAt)) {
+            throw new \InvalidArgumentException('The time-out must be after the time-in.');
+        }
+
+        $date = $startAt->copy()->startOfDay();
+        $hours = round($startAt->diffInMinutes($endAt) / 60, 2);
+        $overtimeType = $this->determineOvertimeType($employee, $date);
 
         // Get pay rate multiplier from work policy
         $policy = WorkPolicy::forCompany($employee->company_id)->active()->first();
@@ -37,7 +51,9 @@ class OvertimeService
             'employee_id' => $employee->id,
             'company_id' => $employee->company_id,
             'date' => $date,
-            'hours' => $data['hours'],
+            'start_at' => $startAt,
+            'end_at' => $endAt,
+            'hours' => $hours,
             'overtime_type' => $overtimeType,
             'reason' => $data['reason'] ?? null,
             'pay_rate_multiplier' => $payRateMultiplier,
@@ -46,7 +62,7 @@ class OvertimeService
 
         Log::info('Overtime request created', [
             'employee_id' => $employee->id,
-            'hours' => $data['hours'],
+            'hours' => $hours,
             'type' => $overtimeType,
         ]);
 

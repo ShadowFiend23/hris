@@ -269,8 +269,11 @@ resources/js/
 3. Approved leaves are reflected in the attendance calendar.
 
 ### Overtime Flow
-1. Employee submits `OvertimeRecord` (pre or post).
-2. HR approves → OT hours feed into payroll as `PayrollEarning` with the applicable OT rate from `WorkPolicy`.
+1. Employee files an `OvertimeRecord` by entering a **time-in** (`start_at` = date + time) and a **time-out** (`end_at` = date + time). The time-out may fall on the next calendar day for overnight overtime.
+   - Example: an 8:00 AM–5:00 PM shift; the employee clocks out at 7:01 PM and requests overtime from 5:00 PM to 7:01 PM.
+   - The employee does **not** enter hours or type. `hours` is derived from `end_at − start_at`; `overtime_type` (weekday / weekend / holiday) is auto-derived from the date and the employee's shift `work_days` and the holiday calendar.
+2. HR/manager reviews the request (time-in, time-out, computed hours) and approves/rejects.
+3. On approval → OT hours feed into payroll as `PayrollEarning` with the applicable OT rate from `WorkPolicy` (or the DOLE-compounded default).
 
 ---
 

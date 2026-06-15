@@ -76,6 +76,8 @@ export interface OvertimeRecord {
     id: number;
     employee_id: number;
     date: string;
+    start_at: string | null;
+    end_at: string | null;
     hours: number;
     overtime_type: 'weekday' | 'weekend' | 'holiday';
     status: 'pending' | 'approved' | 'rejected' | 'paid';
@@ -458,9 +460,10 @@ export function useTimekeeping() {
     // ==========================================
 
     const submitOvertimeRequest = async (data: {
-        date: string;
-        hours: number;
-        overtime_type?: string;
+        start_date: string;
+        start_time: string;
+        end_date: string;
+        end_time: string;
         reason?: string;
     }) => {
         const response = await fetch('/api/timekeeping/overtime/request', {

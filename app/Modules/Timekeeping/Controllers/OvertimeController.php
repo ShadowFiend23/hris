@@ -5,6 +5,7 @@ namespace App\Modules\Timekeeping\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Core\Models\Employee;
 use App\Modules\Timekeeping\Models\OvertimeRecord;
+use App\Modules\Timekeeping\Requests\OvertimeRequestRequest;
 use App\Modules\Timekeeping\Services\OvertimeService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -19,15 +20,8 @@ class OvertimeController extends Controller
     /**
      * Create overtime request
      */
-    public function store(Request $request): JsonResponse
+    public function store(OvertimeRequestRequest $request): JsonResponse
     {
-        $request->validate([
-            'date' => 'required|date',
-            'hours' => 'required|numeric|min:0.5|max:12',
-            'overtime_type' => 'nullable|in:weekday,weekend,holiday',
-            'reason' => 'nullable|string|max:500',
-        ]);
-
         $employee = $request->user()->employee;
 
         if (! $employee) {
@@ -35,7 +29,7 @@ class OvertimeController extends Controller
         }
 
         try {
-            $record = $this->overtimeService->createOvertimeRequest($employee, $request->all());
+            $record = $this->overtimeService->createOvertimeRequest($employee, $request->validated());
 
             return response()->json([
                 'message' => 'Overtime request submitted',

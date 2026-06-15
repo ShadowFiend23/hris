@@ -31,8 +31,9 @@
           <tr>
             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Employee</th>
             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
+            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Time In</th>
+            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Time Out</th>
             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Hours</th>
-            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Type</th>
             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Reason</th>
             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
           </tr>
@@ -44,8 +45,9 @@
               <div class="text-xs text-gray-500">{{ rec.employee?.employee_id ?? '' }}</div>
             </td>
             <td class="px-4 py-3 text-sm text-gray-700">{{ formatDate(rec.date) }}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">{{ formatDateTime(rec.start_at) }}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">{{ formatDateTime(rec.end_at) }}</td>
             <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ rec.hours }}h</td>
-            <td class="px-4 py-3 text-sm capitalize text-gray-600">{{ rec.overtime_type }}</td>
             <td class="px-4 py-3 max-w-xs truncate text-sm text-gray-600">{{ rec.reason || '—' }}</td>
             <td class="px-4 py-3">
               <div v-if="rejectingId !== rec.id" class="flex items-center gap-2">
@@ -107,21 +109,23 @@
             <tr class="border-b border-gray-200">
               <th class="py-2 pr-4 text-left text-xs font-medium text-gray-500">Employee</th>
               <th class="py-2 pr-4 text-left text-xs font-medium text-gray-500">Date</th>
+              <th class="py-2 pr-4 text-left text-xs font-medium text-gray-500">Time In</th>
+              <th class="py-2 pr-4 text-left text-xs font-medium text-gray-500">Time Out</th>
               <th class="py-2 pr-4 text-left text-xs font-medium text-gray-500">Hours</th>
-              <th class="py-2 pr-4 text-left text-xs font-medium text-gray-500">Type</th>
               <th class="py-2 pr-4 text-left text-xs font-medium text-gray-500">Status</th>
               <th class="py-2 text-left text-xs font-medium text-gray-500">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="approved.length === 0">
-              <td colspan="6" class="py-6 text-center text-sm text-gray-400">No approved overtime records</td>
+              <td colspan="7" class="py-6 text-center text-sm text-gray-400">No approved overtime records</td>
             </tr>
             <tr v-for="rec in approved" :key="rec.id" class="border-b border-gray-100 hover:bg-gray-50">
               <td class="py-2 pr-4 text-sm text-gray-900">{{ rec.employee?.full_name ?? '—' }}</td>
               <td class="py-2 pr-4 text-sm text-gray-600">{{ formatDate(rec.date) }}</td>
+              <td class="py-2 pr-4 text-sm text-gray-600">{{ formatDateTime(rec.start_at) }}</td>
+              <td class="py-2 pr-4 text-sm text-gray-600">{{ formatDateTime(rec.end_at) }}</td>
               <td class="py-2 pr-4 text-sm font-medium text-gray-900">{{ rec.hours }}h</td>
-              <td class="py-2 pr-4 text-sm capitalize text-gray-600">{{ rec.overtime_type }}</td>
               <td class="py-2 pr-4">
                 <span :class="statusBadgeClass(rec.status)" class="rounded-full px-2 py-0.5 text-xs font-medium">
                   {{ formatStatus(rec.status) }}
@@ -153,6 +157,8 @@ import { CheckCircle } from 'lucide-vue-next'
 interface OvertimeRecord {
   id: number
   date: string
+  start_at: string | null
+  end_at: string | null
   hours: number
   overtime_type: string
   reason: string | null
@@ -259,6 +265,9 @@ const markPaid = async (id: number) => {
 
 const formatDate = (date: string) =>
   new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+const formatDateTime = (value: string | null) =>
+  value ? new Date(value).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'
 
 const formatStatus = (status: string) => {
   const map: Record<string, string> = { pending: 'Pending', approved: 'Approved', rejected: 'Rejected', paid: 'Paid' }

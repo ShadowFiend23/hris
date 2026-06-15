@@ -30,8 +30,12 @@ class AttendanceSeeder extends Seeder
             ->active()
             ->get();
 
+        // Admin users are excluded — they manage the system and should not have attendance records.
         $employees = Employee::where('company_id', $company->id)
             ->where('is_active', true)
+            ->whereDoesntHave('user.roles', function ($query) {
+                $query->where('slug', 'admin');
+            })
             ->orderBy('id')
             ->get();
 

@@ -40,6 +40,10 @@ class OvertimeSeeder extends Seeder
                 default => 1.25,
             };
 
+            // Overtime worked after the regular 8–5 shift: time-in 17:00, time-out 17:00 + hours.
+            $startAt = $row['date']->copy()->setTime(17, 0, 0);
+            $endAt = $startAt->copy()->addMinutes((int) round($row['hours'] * 60));
+
             OvertimeRecord::firstOrCreate(
                 [
                     'employee_id' => $employee->id,
@@ -47,6 +51,8 @@ class OvertimeSeeder extends Seeder
                 ],
                 [
                     'company_id' => $company->id,
+                    'start_at' => $startAt,
+                    'end_at' => $endAt,
                     'hours' => $row['hours'],
                     'overtime_type' => $row['type'],
                     'reason' => 'Seeded '.$row['type'].' overtime',

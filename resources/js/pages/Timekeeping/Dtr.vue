@@ -44,23 +44,20 @@
                 autocomplete="off"
                 class="w-64 px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none"
                 @input="onEmployeeInput"
-                @focus="showSuggestions = suggestions.length > 0"
+                @focus="filterEmployees()"
                 @keydown.escape="showSuggestions = false"
                 @keydown.down.prevent="highlightNext"
                 @keydown.up.prevent="highlightPrev"
                 @keydown.enter.prevent="selectHighlighted"
               />
-              <button v-if="selectedEmployeeId !== props.myEmployeeId || employeeQuery" @click="clearEmployee" type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <button v-if="selectedEmployeeId !== props.myEmployeeId" @click="clearEmployee" type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                 <X :size="14" />
               </button>
               <Search v-else :size="14" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
 
-            <div v-if="suggestionsLoading" class="absolute z-20 mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-400 shadow-lg">
-              Searching…
-            </div>
             <ul
-              v-else-if="showSuggestions && suggestions.length > 0"
+              v-if="showSuggestions && suggestions.length > 0"
               class="absolute z-20 mt-1 w-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg"
               style="max-height: 220px"
             >
@@ -74,12 +71,6 @@
                 <span class="ml-1 text-xs text-gray-400">{{ emp.employee_id }}</span>
               </li>
             </ul>
-            <div
-              v-else-if="showSuggestions && employeeQuery.length >= 2"
-              class="absolute z-20 mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-500 shadow-lg"
-            >
-              No employees found
-            </div>
           </div>
 
           <div>
@@ -233,14 +224,12 @@ import { computed, onMounted, ref } from 'vue'
 interface EmployeeOption {
   id: number
   name: string
-}
-
-interface EmployeeSuggestion {
-  id: number
-  employee_id: string
   first_name: string
   last_name: string
+  employee_id: string
 }
+
+type EmployeeSuggestion = EmployeeOption
 
 interface DtrRow {
   day: number
@@ -268,8 +257,10 @@ const props = defineProps<{
   myEmployeeId: number
 }>()
 
+const myEmployee = props.employees.find((e) => e.id === props.myEmployeeId)
+
 const selectedEmployeeId = ref<number>(props.myEmployeeId)
-const selectedEmployeeName = ref<string>(props.employees.find((e) => e.id === props.myEmployeeId)?.name ?? '')
+const selectedEmployeeName = ref<string>(myEmployee?.name ?? '')
 const selectedYear = ref<number>(props.currentYear)
 const selectedMonth = ref<number>(props.currentMonth)
 
@@ -277,50 +268,33 @@ const dtrData = ref<DtrData | null>(null)
 const isLoading = ref(false)
 const loadError = ref<string | null>(null)
 
-// Employee autocomplete
-const employeeQuery = ref(selectedEmployeeName.value)
+// Employee autocomplete — filtered from props (no API call needed)
+const employeeQuery = ref(myEmployee ? `${myEmployee.last_name}, ${myEmployee.first_name}` : '')
 const suggestions = ref<EmployeeSuggestion[]>([])
 const showSuggestions = ref(false)
-const suggestionsLoading = ref(false)
 const highlightedIndex = ref(-1)
 const autocompleteWrap = ref<HTMLElement | null>(null)
-let debounceTimer: ReturnType<typeof setTimeout>
 
-const onEmployeeInput = () => {
-  clearTimeout(debounceTimer)
-  if (employeeQuery.value.length < 2) {
-    suggestions.value = []
-    showSuggestions.value = false
-    return
-  }
-  suggestionsLoading.value = true
-  showSuggestions.value = true
-  debounceTimer = setTimeout(fetchSuggestions, 280)
+const filterEmployees = () => {
+  const q = employeeQuery.value.toLowerCase().trim()
+  const filtered = q.length === 0
+    ? props.employees
+    : props.employees.filter(e =>
+      e.name.toLowerCase().includes(q) || e.employee_id.toLowerCase().includes(q),
+    )
+  suggestions.value = [...filtered].sort((a, b) => a.last_name.localeCompare(b.last_name))
+  showSuggestions.value = suggestions.value.length > 0
+  highlightedIndex.value = -1
 }
 
-const fetchSuggestions = async () => {
-  try {
-    const res = await fetch(`/api/core/employees?search=${encodeURIComponent(employeeQuery.value)}&is_active=1`, {
-      headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-      credentials: 'same-origin',
-    })
-    if (!res.ok) { return }
-    const json = await res.json()
-    const list: any[] = json.data ?? json
-    suggestions.value = list
-      .map((e: any) => ({ id: e.id, employee_id: e.employee_id, first_name: e.first_name, last_name: e.last_name }))
-      .sort((a, b) => a.last_name.localeCompare(b.last_name))
-      .slice(0, 8)
-    highlightedIndex.value = -1
-  } finally {
-    suggestionsLoading.value = false
-  }
+const onEmployeeInput = () => {
+  filterEmployees()
 }
 
 const selectEmployee = (emp: EmployeeSuggestion) => {
   selectedEmployeeId.value = emp.id
-  selectedEmployeeName.value = `${emp.last_name}, ${emp.first_name}`
-  employeeQuery.value = selectedEmployeeName.value
+  selectedEmployeeName.value = emp.name
+  employeeQuery.value = `${emp.last_name}, ${emp.first_name}`
   showSuggestions.value = false
   suggestions.value = []
   fetchDtrData()
@@ -328,8 +302,8 @@ const selectEmployee = (emp: EmployeeSuggestion) => {
 
 const clearEmployee = () => {
   selectedEmployeeId.value = props.myEmployeeId
-  selectedEmployeeName.value = props.employees.find((e) => e.id === props.myEmployeeId)?.name ?? ''
-  employeeQuery.value = ''
+  selectedEmployeeName.value = myEmployee?.name ?? ''
+  employeeQuery.value = myEmployee ? `${myEmployee.last_name}, ${myEmployee.first_name}` : ''
   suggestions.value = []
   showSuggestions.value = false
   fetchDtrData()

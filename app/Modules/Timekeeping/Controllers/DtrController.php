@@ -37,6 +37,9 @@ class DtrController extends Controller
             'employees' => $employees->map(fn (Employee $e) => [
                 'id' => $e->id,
                 'name' => $e->full_name,
+                'first_name' => $e->first_name,
+                'last_name' => $e->last_name,
+                'employee_id' => $e->employee_id,
             ])->values(),
             'currentYear' => now()->year,
             'currentMonth' => now()->month,

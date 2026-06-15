@@ -85,13 +85,24 @@ class ReportService
     /**
      * Generate leave report
      */
-    public function generateLeaveReport(int $companyId, int $year, array $filters = []): array
+    public function generateLeaveReport(int $companyId, Carbon $startDate, Carbon $endDate, array $filters = []): array
     {
         $query = LeaveRequest::whereHas('employee', function ($q) use ($companyId) {
             $q->where('company_id', $companyId);
         })
-            ->whereYear('start_date', $year)
+            ->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('start_date', [$startDate, $endDate])
+                    ->orWhereBetween('end_date', [$startDate, $endDate])
+                    ->orWhere(function ($inner) use ($startDate, $endDate) {
+                        $inner->where('start_date', '<=', $startDate)
+                            ->where('end_date', '>=', $endDate);
+                    });
+            })
             ->with(['employee.department', 'leaveType', 'approver']);
+
+        if (! empty($filters['employee_id'])) {
+            $query->where('employee_id', $filters['employee_id']);
+        }
 
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
@@ -127,7 +138,10 @@ class ReportService
 
         return [
             'report_type' => 'leave',
-            'year' => $year,
+            'date_range' => [
+                'start' => $startDate->toDateString(),
+                'end' => $endDate->toDateString(),
+            ],
             'generated_at' => now()->toDateTimeString(),
             'summary' => [
                 'total_requests' => $requests->count(),
@@ -165,6 +179,10 @@ class ReportService
         $query = OvertimeRecord::forCompany($companyId)
             ->forDateRange($startDate, $endDate)
             ->with(['employee.department', 'approver']);
+
+        if (! empty($filters['employee_id'])) {
+            $query->where('employee_id', $filters['employee_id']);
+        }
 
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
@@ -210,6 +228,8 @@ class ReportService
                 'records' => $employeeRecords->map(function ($record) {
                     return [
                         'date' => $record->date->toDateString(),
+                        'start_at' => $record->start_at?->toDateTimeString(),
+                        'end_at' => $record->end_at?->toDateTimeString(),
                         'hours' => $record->hours,
                         'overtime_type' => $record->overtime_type,
                         'status' => $record->status,

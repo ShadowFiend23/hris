@@ -38,26 +38,31 @@
       <h3 class="text-lg font-semibold text-gray-900 mb-6">Request Overtime</h3>
 
       <form @submit.prevent="handleSubmitOvertime" class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
-            <DatePicker v-model="overtimeForm.date" />
+            <label class="block text-sm font-medium text-gray-700 mb-2">Date of Time In</label>
+            <DatePicker v-model="overtimeForm.start_date" />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Hours</label>
-            <input v-model.number="overtimeForm.hours" type="number" min="0.5" max="12" step="0.5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0" />
+            <label class="block text-sm font-medium text-gray-700 mb-2">Time In</label>
+            <input v-model="overtimeForm.start_time" type="time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
-            <select v-model="overtimeForm.overtime_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              <option value="">Select type</option>
-              <option value="weekday">Weekday</option>
-              <option value="weekend">Weekend</option>
-              <option value="holiday">Holiday</option>
-            </select>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Date of Time Out</label>
+            <DatePicker v-model="overtimeForm.end_date" :min-date="overtimeForm.start_date || undefined" />
           </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Time Out</label>
+            <input v-model="overtimeForm.end_time" type="time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+          </div>
+        </div>
+
+        <!-- Computed hours preview -->
+        <div v-if="computedHours !== null" class="rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          Total overtime: <span class="font-semibold">{{ computedHours }}h</span>
         </div>
 
         <div>
@@ -100,8 +105,9 @@
           <thead>
             <tr class="border-b border-gray-200">
               <th class="text-left py-3 px-4 font-medium text-gray-900">Date</th>
+              <th class="text-left py-3 px-4 font-medium text-gray-900">Time In</th>
+              <th class="text-left py-3 px-4 font-medium text-gray-900">Time Out</th>
               <th class="text-left py-3 px-4 font-medium text-gray-900">Hours</th>
-              <th class="text-left py-3 px-4 font-medium text-gray-900">Type</th>
               <th class="text-left py-3 px-4 font-medium text-gray-900">Reason</th>
               <th class="text-left py-3 px-4 font-medium text-gray-900">Status</th>
               <th class="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
@@ -109,12 +115,13 @@
           </thead>
           <tbody>
             <tr v-if="overtimeHistory.length === 0">
-              <td colspan="6" class="py-8 text-center text-gray-500">No overtime records found</td>
+              <td colspan="7" class="py-8 text-center text-gray-500">No overtime records found</td>
             </tr>
             <tr v-for="record in overtimeHistory" :key="record.id" class="border-b border-gray-200 hover:bg-gray-50">
               <td class="py-3 px-4 text-gray-900">{{ formatDate(record.date) }}</td>
+              <td class="py-3 px-4 text-gray-600">{{ formatDateTime(record.start_at) }}</td>
+              <td class="py-3 px-4 text-gray-600">{{ formatDateTime(record.end_at) }}</td>
               <td class="py-3 px-4 text-gray-900 font-medium">{{ record.hours }}h</td>
-              <td class="py-3 px-4 text-gray-600 capitalize">{{ record.overtime_type }}</td>
               <td class="py-3 px-4 text-gray-600">{{ record.reason || '-' }}</td>
               <td class="py-3 px-4">
                 <span :class="[
@@ -145,7 +152,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { Loader2 } from 'lucide-vue-next'
 import { useTimekeeping, type OvertimeRecord } from '@/composables/useTimekeeping'
 import DatePicker from '@/components/ui/DatePicker.vue'
@@ -176,10 +183,22 @@ const submitSuccess = ref(false)
 const cancellingId = ref<number | null>(null)
 
 const overtimeForm = ref({
-  date: '',
-  hours: 0,
-  overtime_type: '',
+  start_date: '',
+  start_time: '',
+  end_date: '',
+  end_time: '',
   reason: ''
+})
+
+// Live preview of the computed overtime hours from the chosen window.
+const computedHours = computed<number | null>(() => {
+  const { start_date, start_time, end_date, end_time } = overtimeForm.value
+  if (!start_date || !start_time || !end_date || !end_time) { return null }
+  const start = new Date(`${start_date}T${start_time}`)
+  const end = new Date(`${end_date}T${end_time}`)
+  const diffMs = end.getTime() - start.getTime()
+  if (Number.isNaN(diffMs) || diffMs <= 0) { return null }
+  return Math.round((diffMs / 3_600_000) * 100) / 100
 })
 
 // Helper functions
@@ -188,6 +207,16 @@ const formatDate = (date: string): string => {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
+  })
+}
+
+const formatDateTime = (value: string | null): string => {
+  if (!value) { return '-' }
+  return new Date(value).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   })
 }
 
@@ -223,8 +252,14 @@ const getStatusDotClass = (status: string): string => {
 
 // Event handlers
 const handleSubmitOvertime = async () => {
-  if (!overtimeForm.value.date || !overtimeForm.value.hours || !overtimeForm.value.overtime_type) {
-    submitError.value = 'Please fill in all required fields'
+  const { start_date, start_time, end_date, end_time } = overtimeForm.value
+  if (!start_date || !start_time || !end_date || !end_time) {
+    submitError.value = 'Please fill in the time-in and time-out fields'
+    return
+  }
+
+  if (computedHours.value === null) {
+    submitError.value = 'The time-out must be after the time-in'
     return
   }
 
@@ -234,14 +269,15 @@ const handleSubmitOvertime = async () => {
 
   try {
     await submitOvertimeRequest({
-      date: overtimeForm.value.date,
-      hours: overtimeForm.value.hours,
-      overtime_type: overtimeForm.value.overtime_type || undefined,
+      start_date,
+      start_time,
+      end_date,
+      end_time,
       reason: overtimeForm.value.reason || undefined,
     })
 
     submitSuccess.value = true
-    overtimeForm.value = { date: '', hours: 0, overtime_type: '', reason: '' }
+    overtimeForm.value = { start_date: '', start_time: '', end_date: '', end_time: '', reason: '' }
 
     // Refresh data
     await Promise.all([loadHistory(), loadSummary()])

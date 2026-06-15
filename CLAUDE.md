@@ -462,7 +462,7 @@ The app uses a module-based structure inside `app/Modules/`. Each module is self
 
 ## Domain Knowledge (Philippine Payroll)
 - Statutory deductions: SSS, PhilHealth, PagIBIG — calculated via `ContributionBracket` model.
-- Overtime is calculated against `WorkPolicy` settings (OT rate, rest day rate, holiday rate).
+- Overtime requests are filed as a **time-in/time-out window**: `start_at` (date + time) and `end_at` (date + time, may be the next day for overnight OT). The employee does NOT enter hours or type — `hours` is derived from `end_at − start_at`, and `overtime_type` (weekday/weekend/holiday) is auto-derived in `OvertimeService` from the date, the employee's shift `work_days`, and the holiday calendar. Pay is calculated against `WorkPolicy` settings (OT rate, rest day rate, holiday rate).
 - Night differential applies to hours worked between 10PM–6AM.
 - Payroll period lifecycle: `draft → processing → finalized → closed`.
 - Attendance splits the day: `clock_in → morning_out → afternoon_in → clock_out`.
@@ -525,6 +525,37 @@ function changeXxxPerPage(): void { xxxPage.value = 1 }
 
 watch(xxxSearch, () => { xxxPage.value = 1 })
 // Also add: watch(() => sourceData, () => { xxxPage.value = 1 }) when data reloads (e.g. report tables)
+
+// Windowed page numbers — see "Windowed pagination" below. `buildPageWindow` is shared per file.
+const xxxPageWindow = computed(() => buildPageWindow(xxxPage.value, xxxTotalPages.value))
+```
+
+### Windowed pagination (required for every table)
+
+Never render one button per page with `v-for="p in xxxTotalPages"` — long lists overflow the footer. Instead use a sliding window that always shows the first & last page with `…` filling the gaps. Define `buildPageWindow` **once per file** (shared by all tables in that component), then create a `xxxPageWindow` computed per table (shown above).
+
+The max number of numbered buttons is configurable in `.env` via `VITE_TABLE_MAX_PAGE_BUTTONS` (default `7`, minimum `5`). Vite env vars are read at build time — changing `.env` requires re-running `npm run dev` / `npm run build`. Add the key to `.env` and `.env.example` if it isn't present.
+
+```typescript
+// Max numbered page buttons shown at once. Configurable via VITE_TABLE_MAX_PAGE_BUTTONS in .env (default 7).
+const MAX_PAGE_BUTTONS = Math.max(5, Number(import.meta.env.VITE_TABLE_MAX_PAGE_BUTTONS) || 7)
+
+function buildPageWindow(current: number, total: number): (number | '...')[] {
+  if (total <= MAX_PAGE_BUTTONS) {
+    return Array.from({ length: total }, (_, i) => i + 1)
+  }
+  const middleCount = MAX_PAGE_BUTTONS - 2
+  let start = current - Math.floor(middleCount / 2)
+  let end = current + Math.floor(middleCount / 2)
+  if (start < 2) { start = 2; end = start + middleCount - 1 }
+  if (end > total - 1) { end = total - 1; start = end - middleCount + 1 }
+  const pages: (number | '...')[] = [1]
+  if (start > 2) { pages.push('...') }
+  for (let i = start; i <= end; i++) { pages.push(i) }
+  if (end < total - 1) { pages.push('...') }
+  pages.push(total)
+  return pages
+}
 ```
 
 ### Template — Search input (right-aligned row above table)
@@ -563,10 +594,13 @@ watch(xxxSearch, () => { xxxPage.value = 1 })
     <button @click="xxxPage--" :disabled="xxxPage <= 1"
       class="rounded-lg border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
       v-html="'&laquo;'" />
-    <button v-for="p in xxxTotalPages" :key="p" @click="xxxPage = p"
-      :class="['rounded-lg px-3 py-1 text-sm font-medium transition-colors', xxxPage === p ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700']">
-      {{ p }}
-    </button>
+    <template v-for="(p, i) in xxxPageWindow" :key="i">
+      <span v-if="p === '...'" class="px-2 py-1 text-sm text-gray-400 dark:text-gray-500">…</span>
+      <button v-else @click="xxxPage = p"
+        :class="['rounded-lg px-3 py-1 text-sm font-medium transition-colors', xxxPage === p ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700']">
+        {{ p }}
+      </button>
+    </template>
     <button @click="xxxPage++" :disabled="xxxPage >= xxxTotalPages"
       class="rounded-lg border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
       v-html="'&raquo;'" />

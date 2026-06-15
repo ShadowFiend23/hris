@@ -73,9 +73,10 @@
         <ol class="mt-3 space-y-1.5 text-sm">
           <li><span class="step">1</span> Click <strong>Timekeeping</strong> in the sidebar.</li>
           <li><span class="step">2</span> Go to the <strong>Overtime</strong> tab — the request form is shown right there.</li>
-          <li><span class="step">3</span> Select the date, OT type, hours, and reason.</li>
+          <li><span class="step">3</span> Enter your <strong>time-in</strong> (date and time) and <strong>time-out</strong> (date and time), then a reason. The total hours are calculated for you.</li>
           <li><span class="step">4</span> Click <strong>Submit Overtime Request</strong> — your approver will be notified.</li>
         </ol>
+        <DocTip>Use the time you actually started and ended overtime (e.g. an 8–5 shift you left at 7:01 PM → time-in 5:00 PM, time-out 7:01 PM). For overnight overtime, set the time-out date to the next day.</DocTip>
       </DocSection>
 
       <DocSection title="Requesting a Schedule Change" icon="CalendarRange">
